@@ -11,6 +11,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
     volumes:
       - postgres-data:/var/lib/postgresql/data
+      - ./backend/src/utils/database-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     ports:
       - "5432:5432"
     networks:
@@ -83,6 +84,7 @@ services:
       - homelab-network
     volumes:
       - ./backend/logs:/app/logs
+      - ./create-admin.js:/app/create-admin.js:ro
 
   # Frontend
   frontend:
