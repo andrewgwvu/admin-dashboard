@@ -35,7 +35,7 @@ export const getUnifiedAccount = async (req: AuthRequest, res: Response) => {
     const { source } = req.query;
 
     const account = await accountService.getUnifiedAccount(
-      identifier,
+      Array.isArray(identifier) ? identifier[0] : identifier,
       source as string | undefined
     );
 
@@ -63,8 +63,10 @@ export const updateAccount = async (req: AuthRequest, res: Response) => {
   try {
     const { source, sourceId } = req.params;
     const updates = req.body;
+    const sourceStr = Array.isArray(source) ? source[0] : source;
+    const sourceIdStr = Array.isArray(sourceId) ? sourceId[0] : sourceId;
 
-    if (!['jumpcloud', 'okta', 'active-directory'].includes(source)) {
+    if (!['jumpcloud', 'okta', 'active-directory'].includes(sourceStr)) {
       return res.status(400).json({
         success: false,
         error: 'Invalid source',
@@ -72,8 +74,8 @@ export const updateAccount = async (req: AuthRequest, res: Response) => {
     }
 
     const success = await accountService.updateAccount(
-      source as any,
-      sourceId,
+      sourceStr as any,
+      sourceIdStr,
       updates
     );
 
@@ -100,15 +102,17 @@ export const updateAccount = async (req: AuthRequest, res: Response) => {
 export const expirePassword = async (req: AuthRequest, res: Response) => {
   try {
     const { source, sourceId } = req.params;
+    const sourceStr = Array.isArray(source) ? source[0] : source;
+    const sourceIdStr = Array.isArray(sourceId) ? sourceId[0] : sourceId;
 
-    if (!['jumpcloud', 'okta', 'active-directory'].includes(source)) {
+    if (!['jumpcloud', 'okta', 'active-directory'].includes(sourceStr)) {
       return res.status(400).json({
         success: false,
         error: 'Invalid source',
       } as ApiResponse);
     }
 
-    const success = await accountService.expirePassword(source as any, sourceId);
+    const success = await accountService.expirePassword(sourceStr as any, sourceIdStr);
 
     if (!success) {
       return res.status(500).json({
@@ -134,15 +138,17 @@ export const resetMFA = async (req: AuthRequest, res: Response) => {
   try {
     const { source, sourceId } = req.params;
     const { factorId } = req.body;
+    const sourceStr = Array.isArray(source) ? source[0] : source;
+    const sourceIdStr = Array.isArray(sourceId) ? sourceId[0] : sourceId;
 
-    if (!['jumpcloud', 'okta', 'active-directory'].includes(source)) {
+    if (!['jumpcloud', 'okta', 'active-directory'].includes(sourceStr)) {
       return res.status(400).json({
         success: false,
         error: 'Invalid source',
       } as ApiResponse);
     }
 
-    const success = await accountService.resetMFA(source as any, sourceId, factorId);
+    const success = await accountService.resetMFA(sourceStr as any, sourceIdStr, factorId);
 
     if (!success) {
       return res.status(500).json({
@@ -167,15 +173,17 @@ export const resetMFA = async (req: AuthRequest, res: Response) => {
 export const suspendAccount = async (req: AuthRequest, res: Response) => {
   try {
     const { source, sourceId } = req.params;
+    const sourceStr = Array.isArray(source) ? source[0] : source;
+    const sourceIdStr = Array.isArray(sourceId) ? sourceId[0] : sourceId;
 
-    if (!['jumpcloud', 'okta', 'active-directory'].includes(source)) {
+    if (!['jumpcloud', 'okta', 'active-directory'].includes(sourceStr)) {
       return res.status(400).json({
         success: false,
         error: 'Invalid source',
       } as ApiResponse);
     }
 
-    const success = await accountService.suspendAccount(source as any, sourceId);
+    const success = await accountService.suspendAccount(sourceStr as any, sourceIdStr);
 
     if (!success) {
       return res.status(500).json({

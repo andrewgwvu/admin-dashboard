@@ -3,7 +3,7 @@ import { AuthRequest, ApiResponse } from '../types';
 import omadaService from '../services/omada.service';
 import logger from '../config/logger';
 
-export const getDevices = async (req: AuthRequest, res: Response) => {
+export const getDevices = async (_req: AuthRequest, res: Response) => {
   try {
     const devices = await omadaService.getDevices();
 
@@ -23,8 +23,9 @@ export const getDevices = async (req: AuthRequest, res: Response) => {
 export const getDeviceById = async (req: AuthRequest, res: Response) => {
   try {
     const { deviceId } = req.params;
+    const deviceIdStr = Array.isArray(deviceId) ? deviceId[0] : deviceId;
 
-    const device = await omadaService.getDeviceById(deviceId);
+    const device = await omadaService.getDeviceById(deviceIdStr);
 
     if (!device) {
       return res.status(404).json({
@@ -49,8 +50,9 @@ export const getDeviceById = async (req: AuthRequest, res: Response) => {
 export const rebootDevice = async (req: AuthRequest, res: Response) => {
   try {
     const { deviceId } = req.params;
+    const deviceIdStr = Array.isArray(deviceId) ? deviceId[0] : deviceId;
 
-    const success = await omadaService.rebootDevice(deviceId);
+    const success = await omadaService.rebootDevice(deviceIdStr);
 
     if (!success) {
       return res.status(500).json({
@@ -72,7 +74,7 @@ export const rebootDevice = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const getClients = async (req: AuthRequest, res: Response) => {
+export const getClients = async (_req: AuthRequest, res: Response) => {
   try {
     const clients = await omadaService.getClients();
 
@@ -92,8 +94,9 @@ export const getClients = async (req: AuthRequest, res: Response) => {
 export const blockClient = async (req: AuthRequest, res: Response) => {
   try {
     const { clientMac } = req.params;
+    const clientMacStr = Array.isArray(clientMac) ? clientMac[0] : clientMac;
 
-    const success = await omadaService.blockClient(clientMac);
+    const success = await omadaService.blockClient(clientMacStr);
 
     if (!success) {
       return res.status(500).json({
@@ -118,8 +121,9 @@ export const blockClient = async (req: AuthRequest, res: Response) => {
 export const unblockClient = async (req: AuthRequest, res: Response) => {
   try {
     const { clientMac } = req.params;
+    const clientMacStr = Array.isArray(clientMac) ? clientMac[0] : clientMac;
 
-    const success = await omadaService.unblockClient(clientMac);
+    const success = await omadaService.unblockClient(clientMacStr);
 
     if (!success) {
       return res.status(500).json({
@@ -141,7 +145,7 @@ export const unblockClient = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const getSiteSettings = async (req: AuthRequest, res: Response) => {
+export const getSiteSettings = async (_req: AuthRequest, res: Response) => {
   try {
     const settings = await omadaService.getSiteSettings();
 
@@ -158,7 +162,7 @@ export const getSiteSettings = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const getWLANs = async (req: AuthRequest, res: Response) => {
+export const getWLANs = async (_req: AuthRequest, res: Response) => {
   try {
     const wlans = await omadaService.getWLANs();
 
