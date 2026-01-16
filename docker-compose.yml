@@ -47,10 +47,9 @@ services:
     container_name: homelab-dashboard-backend
     # Add DNS servers for internal network resolution
     dns:
-      - 8.8.8.8  # Google DNS as fallback
-      - 8.8.4.4
       # Add your internal DNS server IP here if needed
-      # - 192.168.1.1
+      - 10.1.20.5
+      - 10.1.20.7
     environment:
       NODE_ENV: production
       PORT: 3001
@@ -79,6 +78,10 @@ services:
       OMADA_USERNAME: ${OMADA_USERNAME}
       OMADA_PASSWORD: ${OMADA_PASSWORD}
       OMADA_SITE_ID: ${OMADA_SITE_ID}
+      OMADA_OPENAPI_OMADAC_ID: ${OMADA_OPENAPI_OMADAC_ID}
+      OMADA_OPENAPI_CLIENT_ID: ${OMADA_OPENAPI_CLIENT_ID}
+      OMADA_OPENAPI_CLIENT_SECRET: ${OMADA_OPENAPI_CLIENT_SECRET}
+
     ports:
       - "3001:3001"
     depends_on:
@@ -90,7 +93,6 @@ services:
       - homelab-network
     volumes:
       - ./backend/logs:/app/logs
-      - ./create-admin.js:/app/create-admin.js:ro
 
   # Frontend
   frontend:

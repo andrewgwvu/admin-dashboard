@@ -5,38 +5,65 @@ import logger from '../config/logger';
 class JumpCloudService {
   private client: AxiosInstance;
   private apiKey: string;
-  // private orgId: string; // Unused for now, may be needed for multi-org setups
+  private orgId?: string;
+  private baseUrl: string;
 
   constructor() {
     this.apiKey = process.env.JUMPCLOUD_API_KEY || '';
-    // this.orgId = process.env.JUMPCLOUD_ORG_ID || '';
+    this.orgId = process.env.JUMPCLOUD_ORG_ID || undefined;
+
+    // Allow overriding the API base URL for EU tenants or testing.
+    // Default is the US console API.
+    this.baseUrl = process.env.JUMPCLOUD_BASE_URL || 'https://console.jumpcloud.com';
+
+    if (!this.apiKey) {
+      logger.warn('JUMPCLOUD_API_KEY is not set; JumpCloud integration will fail');
+    }
+
+    const headers: Record<string, string> = {
+      'x-api-key': this.apiKey,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    };
+
+    // Some JumpCloud orgs require x-org-id for API calls.
+    if (this.orgId) {
+      headers['x-org-id'] = this.orgId;
+    }
 
     this.client = axios.create({
-      baseURL: 'https://console.jumpcloud.com/api',
-      headers: {
-        'x-api-key': this.apiKey,
-        'Content-Type': 'application/json',
-      },
+      baseURL: `${this.baseUrl.replace(/\/$/, '')}/api`,
+      headers,
+      timeout: 15000,
     });
   }
 
   async searchUsers(query: string): Promise<SearchResult[]> {
     try {
+      const trimmed = (query || '').trim();
+      if (!trimmed) return [];
+
+      // JumpCloud's Search API supports `searchFilter` for partial text matching
+      // across supported fields.
       const response = await this.client.post('/search/systemusers', {
-        filter: [
-          {
-            $or: [
-              { email: { $regex: query, $options: 'i' } },
-              { username: { $regex: query, $options: 'i' } },
-              { firstname: { $regex: query, $options: 'i' } },
-              { lastname: { $regex: query, $options: 'i' } },
-            ],
-          },
-        ],
-        fields: ['username', 'email', 'firstname', 'lastname', 'displayname', 'activated', 'account_locked'],
+        searchFilter: {
+          searchTerm: trimmed,
+          fields: ['email', 'username', 'firstname', 'lastname', 'displayname'],
+        },
+        // Space-separated string of fields is supported by the Search API.
+        fields:
+          'username email firstname lastname displayname activated account_locked password_date password_expiration_date mfa',
+        limit: 50,
+        skip: 0,
       });
 
-      return response.data.results.map((user: any) => ({
+      const resultsArray = Array.isArray(response.data?.results)
+        ? response.data.results
+        : Array.isArray(response.data)
+          ? response.data
+          : [];
+
+      return resultsArray.map((user: any) => ({
         source: 'jumpcloud' as const,
         type: 'user' as const,
         id: user._id,
@@ -46,7 +73,17 @@ class JumpCloudService {
         attributes: user,
       }));
     } catch (error) {
-      logger.error('JumpCloud search error:', error);
+      // Provide more actionable details for common 4xx errors.
+      if (axios.isAxiosError(error)) {
+        logger.error('JumpCloud search error:', {
+          message: error.message,
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+        });
+      } else {
+        logger.error('JumpCloud search error:', error);
+      }
       throw new Error('Failed to search JumpCloud users');
     }
   }

@@ -2,11 +2,11 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Loader2 } from 'lucide-react';
 import { accountService } from '../services/account.service';
-import { SearchResult } from '../types';
+import { AggregatedSearchResult } from '../types';
 
 export default function AccountsPage() {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<SearchResult[]>([]);
+  const [results, setResults] = useState<AggregatedSearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -28,8 +28,8 @@ export default function AccountsPage() {
     }
   };
 
-  const handleResultClick = (result: SearchResult) => {
-    navigate(`/accounts/${encodeURIComponent(result.id)}?source=${result.source}`);
+  const handleResultClick = (result: AggregatedSearchResult) => {
+    navigate(`/accounts/${encodeURIComponent(result.key)}`);
   };
 
   const getSourceBadgeColor = (source: string) => {
@@ -45,13 +45,24 @@ export default function AccountsPage() {
     }
   };
 
+  const sourceLabel = (source: string) => {
+    switch (source) {
+      case 'active-directory':
+        return 'AD';
+      case 'jumpcloud':
+        return 'JumpCloud';
+      case 'okta':
+        return 'Okta';
+      default:
+        return source;
+    }
+  };
+
   return (
     <div>
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Account Management</h1>
-        <p className="mt-2 text-gray-600">
-          Search across JumpCloud, Okta, and Active Directory
-        </p>
+        <p className="mt-2 text-gray-600">Search across JumpCloud, Okta, and Active Directory</p>
       </div>
 
       {/* Search Form */}
@@ -101,35 +112,47 @@ export default function AccountsPage() {
             <h2 className="text-lg font-medium text-gray-900">
               Found {results.length} result{results.length !== 1 ? 's' : ''}
             </h2>
+            <p className="text-sm text-gray-500 mt-1">
+              Each result may include matches from multiple directory sources.
+            </p>
           </div>
           <ul className="divide-y divide-gray-200">
             {results.map((result) => (
               <li
-                key={`${result.source}-${result.id}`}
+                key={result.key}
                 className="px-6 py-4 hover:bg-gray-50 cursor-pointer transition-colors"
                 onClick={() => handleResultClick(result)}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <div className="flex items-center">
-                      <p className="text-sm font-medium text-gray-900">
-                        {result.displayName}
-                      </p>
-                      <span
-                        className={`ml-3 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getSourceBadgeColor(
-                          result.source
-                        )}`}
-                      >
-                        {result.source === 'active-directory'
-                          ? 'AD'
-                          : result.source === 'jumpcloud'
-                          ? 'JumpCloud'
-                          : 'Okta'}
-                      </span>
+                    <div className="flex items-center flex-wrap gap-2">
+                      <p className="text-sm font-medium text-gray-900">{result.displayName}</p>
+
+                      {result.sources.map((src) => (
+                        <span
+                          key={`${result.key}-${src}`}
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getSourceBadgeColor(
+                            src
+                          )}`}
+                        >
+                          {sourceLabel(src)}
+                        </span>
+                      ))}
+
+                      {result.sources.length > 1 && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                          {result.sources.length} sources
+                        </span>
+                      )}
                     </div>
+
                     <div className="mt-1 flex items-center space-x-4 text-sm text-gray-500">
                       {result.email && <span>{result.email}</span>}
                       {result.username && <span>@{result.username}</span>}
+                    </div>
+
+                    <div className="mt-1 text-xs text-gray-400">
+                      Matches: {result.matches.length}
                     </div>
                   </div>
                   <div>
@@ -158,9 +181,7 @@ export default function AccountsPage() {
         <div className="bg-white shadow rounded-lg p-12 text-center">
           <Search className="mx-auto h-12 w-12 text-gray-400" />
           <h3 className="mt-2 text-sm font-medium text-gray-900">No results found</h3>
-          <p className="mt-1 text-sm text-gray-500">
-            Try searching with a different term
-          </p>
+          <p className="mt-1 text-sm text-gray-500">Try searching with a different term</p>
         </div>
       )}
     </div>
