@@ -18,7 +18,7 @@ export const login = async (req: Request, res: Response) => {
 
     // Query user from database
     const result = await query(
-      'SELECT id, username, email, password_hash, first_name, last_name FROM users WHERE username = $1',
+      'SELECT id, username, email, password_hash, first_name, last_name, role FROM users WHERE username = $1',
       [username]
     );
 
@@ -56,6 +56,7 @@ export const login = async (req: Request, res: Response) => {
         id: user.id,
         username: user.username,
         email: user.email,
+        role: user.role || 'user',
       },
       jwtSecret,
       { expiresIn: '24h' }
@@ -77,6 +78,7 @@ export const login = async (req: Request, res: Response) => {
           email: user.email,
           firstName: user.first_name,
           lastName: user.last_name,
+          role: user.role || 'user',
         },
       },
     } as ApiResponse);
@@ -116,10 +118,10 @@ export const register = async (req: Request, res: Response) => {
     // Hash password
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // Create user
+    // Create user (default role is 'user')
     const result = await query(
-      'INSERT INTO users (username, email, password_hash, first_name, last_name) VALUES ($1, $2, $3, $4, $5) RETURNING id, username, email, first_name, last_name',
-      [username, email, passwordHash, firstName, lastName]
+      'INSERT INTO users (username, email, password_hash, first_name, last_name, role) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, username, email, first_name, last_name, role',
+      [username, email, passwordHash, firstName, lastName, 'user']
     );
 
     const user = result.rows[0];
@@ -139,6 +141,7 @@ export const register = async (req: Request, res: Response) => {
         id: user.id,
         username: user.username,
         email: user.email,
+        role: user.role,
       },
       jwtSecret,
       { expiresIn: '24h' }
@@ -154,6 +157,7 @@ export const register = async (req: Request, res: Response) => {
           email: user.email,
           firstName: user.first_name,
           lastName: user.last_name,
+          role: user.role,
         },
       },
     } as ApiResponse);

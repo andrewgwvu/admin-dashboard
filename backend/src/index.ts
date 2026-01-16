@@ -15,6 +15,7 @@ import { errorHandler } from './middleware/errorHandler';
 import authRoutes from './routes/auth.routes';
 import accountRoutes from './routes/account.routes';
 import networkRoutes from './routes/network.routes';
+import adminRoutes from './routes/admin.routes';
 
 import { bootstrapAdminUser } from './utils/bootstrapAdmin';
 
@@ -90,6 +91,7 @@ app.get('/health', (_req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/accounts', accountRoutes);
 app.use('/api/network', networkRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Error handling
 app.use(errorHandler);

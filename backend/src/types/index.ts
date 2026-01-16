@@ -5,6 +5,7 @@ export interface AuthRequest extends Request {
     id: string;
     username: string;
     email: string;
+    role: 'admin' | 'user';
   };
 }
 
@@ -15,8 +16,10 @@ export interface User {
   firstName: string;
   lastName: string;
   displayName: string;
+  role: 'admin' | 'user';
   createdAt: Date;
   updatedAt: Date;
+  lastLogin?: Date;
 }
 
 export interface AccountSource {

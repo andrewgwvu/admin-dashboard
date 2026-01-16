@@ -45,8 +45,8 @@ export const bootstrapAdminUser = async (opts: BootstrapOptions): Promise<void> 
 
   if (existing.rows.length === 0) {
     await query(
-      'INSERT INTO users (username, email, password_hash, first_name, last_name) VALUES ($1, $2, $3, $4, $5)',
-      [username, email, passwordHash, firstName || null, lastName || null]
+      'INSERT INTO users (username, email, password_hash, first_name, last_name, role) VALUES ($1, $2, $3, $4, $5, $6)',
+      [username, email, passwordHash, firstName || null, lastName || null, 'admin']
     );
     logger.info(`Bootstrapped admin user '${username}' (${email})`);
     return;
@@ -55,11 +55,16 @@ export const bootstrapAdminUser = async (opts: BootstrapOptions): Promise<void> 
   const found = existing.rows[0];
   if (forceReset) {
     await query(
-      'UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2',
-      [passwordHash, found.id]
+      'UPDATE users SET password_hash = $1, role = $2, updated_at = NOW() WHERE id = $3',
+      [passwordHash, 'admin', found.id]
     );
     logger.warn(`Reset password for existing admin user '${found.username}' (${found.email}) via bootstrap`);
   } else {
+    // Ensure existing user has admin role
+    await query(
+      'UPDATE users SET role = $1, updated_at = NOW() WHERE id = $2 AND role != $1',
+      ['admin', found.id]
+    );
     logger.info(`Admin user already exists ('${found.username}' / '${found.email}'); bootstrap skipped`);
   }
 };
