@@ -26,6 +26,7 @@ export const authenticateToken = (
       id: string;
       username: string;
       email: string;
+      role: 'admin' | 'user';
     };
 
     req.user = decoded;
@@ -34,4 +35,20 @@ export const authenticateToken = (
     logger.error('Token verification failed:', error);
     return res.status(403).json({ success: false, error: 'Invalid or expired token' });
   }
+};
+
+export const requireAdmin = (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  if (!req.user) {
+    return res.status(401).json({ success: false, error: 'Authentication required' });
+  }
+
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ success: false, error: 'Admin access required' });
+  }
+
+  return next();
 };

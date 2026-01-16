@@ -1,15 +1,23 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Users, Network, Home, LogOut } from 'lucide-react';
+import { Users, Network, Home, LogOut, Shield, Settings, FileText } from 'lucide-react';
 import { authService } from '../services/auth.service';
 
 export default function Layout() {
   const location = useLocation();
   const user = authService.getCurrentUser();
+  const isAdmin = user?.role === 'admin';
 
   const navigation = [
     { name: 'Dashboard', href: '/', icon: Home },
     { name: 'Accounts', href: '/accounts', icon: Users },
     { name: 'Network', href: '/network', icon: Network },
+  ];
+
+  const adminNavigation = [
+    { name: 'Admin Dashboard', href: '/admin', icon: Shield },
+    { name: 'User Management', href: '/admin/users', icon: Users },
+    { name: 'Configuration', href: '/admin/config', icon: Settings },
+    { name: 'Audit Logs', href: '/admin/audit-logs', icon: FileText },
   ];
 
   const handleLogout = () => {
@@ -47,15 +55,52 @@ export default function Layout() {
                 </Link>
               );
             })}
+
+            {/* Admin Section */}
+            {isAdmin && (
+              <>
+                <div className="pt-6 pb-2">
+                  <div className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    Administration
+                  </div>
+                </div>
+                {adminNavigation.map((item) => {
+                  const isActive = location.pathname === item.href;
+                  const Icon = item.icon;
+
+                  return (
+                    <Link
+                      key={item.name}
+                      to={item.href}
+                      className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
+                        isActive
+                          ? 'bg-purple-50 text-purple-700'
+                          : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      <Icon className="w-5 h-5 mr-3" />
+                      {item.name}
+                    </Link>
+                  );
+                })}
+              </>
+            )}
           </nav>
 
           {/* User info */}
           <div className="px-4 py-4 border-t border-gray-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-900">
-                  {user?.firstName} {user?.lastName}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium text-gray-900">
+                    {user?.firstName} {user?.lastName}
+                  </p>
+                  {isAdmin && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                      Admin
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-gray-500">{user?.email}</p>
               </div>
               <button
