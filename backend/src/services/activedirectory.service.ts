@@ -22,17 +22,47 @@ class ActiveDirectoryService {
     }
 
     return new Promise((resolve, reject) => {
-      const client = ldap.createClient({
+      // Determine if using LDAPS based on URL
+      const isLDAPS = this.url.toLowerCase().startsWith('ldaps://');
+
+      const clientOptions: any = {
         url: this.url,
         reconnect: true,
+      };
+
+      // For LDAPS (Server 2022+), configure TLS options
+      if (isLDAPS) {
+        clientOptions.tlsOptions = {
+          // Accept self-signed certificates (common in internal AD)
+          rejectUnauthorized: false,
+          // For production, you may want to validate certificates:
+          // rejectUnauthorized: true,
+          // ca: [fs.readFileSync('/path/to/ca-cert.pem')],
+        };
+        logger.info('Using LDAPS connection with TLS');
+      } else {
+        logger.warn('Using unencrypted LDAP connection (not recommended for Server 2022+)');
+      }
+
+      const client = ldap.createClient(clientOptions);
+
+      // Handle connection errors
+      client.on('error', (err) => {
+        logger.error('LDAP client error:', err);
       });
 
       client.bind(this.username, this.password, (err) => {
         if (err) {
           logger.error('AD bind error:', err);
+          logger.error('AD bind details:', {
+            url: this.url,
+            username: this.username,
+            error: err.message,
+          });
           reject(new Error('Failed to bind to Active Directory'));
           return;
         }
+        logger.info('Successfully bound to Active Directory');
         this.client = client;
         resolve(client);
       });

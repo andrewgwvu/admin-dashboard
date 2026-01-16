@@ -52,6 +52,47 @@ docker-compose exec postgres psql -U homelab -d homelab_dashboard -c "\l"
 
 ## Active Directory Issues
 
+### Windows Server 2022 - LDAPS Required
+
+**Important:** Windows Server 2022 enforces LDAP channel binding and signing by default, which means you **must use LDAPS** (LDAP over SSL/TLS).
+
+**Configuration for Server 2022:**
+
+Edit `.env` and use LDAPS with port 636:
+```bash
+# Server 2022 requires LDAPS
+AD_URL=ldaps://your-ad-server.local:636
+# Or with IP address (recommended):
+AD_URL=ldaps://192.168.1.100:636
+
+AD_BASE_DN=DC=yourdomain,DC=local
+AD_USERNAME=CN=Service Account,CN=Users,DC=yourdomain,DC=local
+AD_PASSWORD=your-password
+```
+
+**Self-Signed Certificates:**
+The dashboard automatically accepts self-signed certificates (common in internal AD environments). If you see certificate errors, the code is already configured to handle them.
+
+**For older servers (2019 and below):**
+```bash
+# Older servers can use plain LDAP
+AD_URL=ldap://your-ad-server.local:389
+```
+
+**Verify LDAPS is enabled on your server:**
+```powershell
+# On your AD server (PowerShell as Admin):
+Test-NetConnection -ComputerName your-dc-name -Port 636
+```
+
+If port 636 is closed, you need to install a certificate and enable LDAPS on your domain controller.
+
+**Quick LDAPS Certificate Setup (if needed):**
+1. Open Certificate Authority snap-in on DC
+2. Request new certificate (Computer certificate)
+3. Or use: `certutil -pulse` to auto-enroll
+4. Restart AD DS service: `Restart-Service NTDS -Force`
+
 ### Error: "getaddrinfo ENOTFOUND ad.yourdomain.com"
 
 **Cause:** Docker container cannot resolve your internal AD server hostname.
@@ -63,9 +104,12 @@ docker-compose exec postgres psql -U homelab -d homelab_dashboard -c "\l"
 Edit `.env`:
 ```bash
 # Change from hostname:
-AD_URL=ldap://ad.yourdomain.com:389
+AD_URL=ldaps://ad.yourdomain.com:636
 
-# To IP address:
+# To IP address (for Server 2022):
+AD_URL=ldaps://192.168.1.100:636
+
+# Or for older servers:
 AD_URL=ldap://192.168.1.100:389
 ```
 
@@ -95,17 +139,26 @@ docker-compose up -d
 
 ### AD Connection Timeout
 
-Check if port 389 (LDAP) or 636 (LDAPS) is accessible:
+**For Server 2022 (LDAPS), check if port 636 is accessible:**
+```bash
+docker-compose exec backend sh -c "nc -zv your-ad-server 636"
+# Or test from host:
+telnet your-ad-server 636
+# Or use PowerShell:
+Test-NetConnection -ComputerName your-ad-server -Port 636
+```
+
+**For older servers (LDAP), check port 389:**
 ```bash
 docker-compose exec backend sh -c "nc -zv your-ad-server 389"
-# Or test from host:
 telnet your-ad-server 389
 ```
 
 If the connection fails, check:
-- Firewall rules on AD server
+- Firewall rules on AD server (allow port 636 for LDAPS or 389 for LDAP)
 - Network connectivity from Docker to AD server
 - AD server is running and accessible
+- For Server 2022: LDAPS certificate is installed and AD DS service is running
 
 ### AD Authentication Failed
 
@@ -122,10 +175,16 @@ Make sure:
 
 **Test AD connection manually:**
 ```bash
+# For Server 2022 (LDAPS):
 docker-compose exec backend sh
 # Inside container:
-ldapsearch -H ldap://your-ad-server -D "CN=Service Account,CN=Users,DC=yourdomain,DC=local" -w "your-password" -b "DC=yourdomain,DC=local" "(cn=*)"
+ldapsearch -H ldaps://your-ad-server:636 -D "CN=Service Account,CN=Users,DC=yourdomain,DC=local" -w "your-password" -b "DC=yourdomain,DC=local" "(cn=*)"
+
+# For older servers (LDAP):
+ldapsearch -H ldap://your-ad-server:389 -D "CN=Service Account,CN=Users,DC=yourdomain,DC=local" -w "your-password" -b "DC=yourdomain,DC=local" "(cn=*)"
 ```
+
+Note: ldapsearch may not be available in the Alpine-based container. You can verify connection from the logs when the backend starts.
 
 ## JumpCloud Issues
 
