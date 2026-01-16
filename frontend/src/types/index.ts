@@ -83,6 +83,19 @@ export interface SearchResult {
   attributes: Record<string, any>;
 }
 
+export interface AggregatedSearchResult {
+  /**
+   * Stable key used to open a unified account view.
+   * Format mirrors backend: u:<username> | e:<email> | i:<source>:<id>
+   */
+  key: string;
+  displayName: string;
+  email?: string;
+  username?: string;
+  matches: SearchResult[];
+  sources: Array<'jumpcloud' | 'okta' | 'active-directory'>;
+}
+
 export interface ApiResponse<T = any> {
   success: boolean;
   data?: T;

@@ -16,6 +16,19 @@ class ActiveDirectoryService {
     this.password = process.env.AD_PASSWORD || '';
   }
 
+  /**
+   * Escape untrusted input for use in an LDAP search filter (RFC 4515).
+   * Prevents malformed filters and reduces LDAP injection risk.
+   */
+  private escapeLdapFilterValue(value: string): string {
+    return value
+      .replace(/\\/g, '\\5c')
+      .replace(/\*/g, '\\2a')
+      .replace(/\(/g, '\\28')
+      .replace(/\)/g, '\\29')
+      .replace(/\x00/g, '\\00');
+  }
+
   private async getClient(): Promise<ldap.Client> {
     if (this.client) {
       return this.client;
@@ -71,9 +84,17 @@ class ActiveDirectoryService {
 
   async searchUsers(query: string): Promise<SearchResult[]> {
     try {
+      if (!this.baseDN) {
+        logger.warn('AD_BASE_DN is not set; skipping Active Directory search');
+        return [];
+      }
+
       const client = await this.getClient();
 
-      const searchFilter = `(&(objectClass=user)(objectCategory=person)(|(cn=*${query}*)(sAMAccountName=*${query}*)(mail=*${query}*)(displayName=*${query}*)))`;
+      const q = this.escapeLdapFilterValue((query || '').trim());
+      if (!q) return [];
+
+      const searchFilter = `(&(objectClass=user)(objectCategory=person)(|(cn=*${q}*)(sAMAccountName=*${q}*)(mail=*${q}*)(displayName=*${q}*)))`;
 
       return new Promise((resolve, reject) => {
         const results: SearchResult[] = [];
@@ -83,7 +104,15 @@ class ActiveDirectoryService {
           {
             filter: searchFilter,
             scope: 'sub',
-            attributes: ['distinguishedName', 'sAMAccountName', 'mail', 'givenName', 'sn', 'displayName', 'userAccountControl'],
+            attributes: [
+              'distinguishedName',
+              'sAMAccountName',
+              'mail',
+              'givenName',
+              'sn',
+              'displayName',
+              'userAccountControl',
+            ],
           },
           (err, res) => {
             if (err) {
@@ -103,7 +132,10 @@ class ActiveDirectoryService {
                 source: 'active-directory' as const,
                 type: 'user' as const,
                 id: dn,
-                displayName: getAttr('displayName') || `${getAttr('givenName') || ''} ${getAttr('sn') || ''}`.trim() || 'Unknown',
+                displayName:
+                  getAttr('displayName') ||
+                  `${getAttr('givenName') || ''} ${getAttr('sn') || ''}`.trim() ||
+                  'Unknown',
                 email: getAttr('mail'),
                 username: getAttr('sAMAccountName'),
                 attributes: entry.pojo,
@@ -156,9 +188,10 @@ class ActiveDirectoryService {
               const accountLocked = (userAccountControl & 0x0010) !== 0;
 
               const pwdLastSet = getAttr('pwdLastSet');
-              const passwordLastSet = pwdLastSet && pwdLastSet !== '0'
-                ? new Date(parseInt(pwdLastSet) / 10000 - 11644473600000)
-                : undefined;
+              const passwordLastSet =
+                pwdLastSet && pwdLastSet !== '0'
+                  ? new Date(parseInt(pwdLastSet) / 10000 - 11644473600000)
+                  : undefined;
 
               foundUser = {
                 source: 'active-directory',
@@ -167,7 +200,10 @@ class ActiveDirectoryService {
                 email: getAttr('mail') || '',
                 firstName: getAttr('givenName') || '',
                 lastName: getAttr('sn') || '',
-                displayName: getAttr('displayName') || `${getAttr('givenName') || ''} ${getAttr('sn') || ''}`.trim() || 'Unknown',
+                displayName:
+                  getAttr('displayName') ||
+                  `${getAttr('givenName') || ''} ${getAttr('sn') || ''}`.trim() ||
+                  'Unknown',
                 enabled: !accountDisabled,
                 locked: accountLocked,
                 passwordLastSet,
@@ -206,33 +242,39 @@ class ActiveDirectoryService {
       const changes: ldap.Change[] = [];
 
       if (updates.email) {
-        changes.push(new ldap.Change({
-          operation: 'replace',
-          modification: {
-            type: 'mail',
-            values: [updates.email],
-          },
-        }));
+        changes.push(
+          new ldap.Change({
+            operation: 'replace',
+            modification: {
+              type: 'mail',
+              values: [updates.email],
+            },
+          })
+        );
       }
 
       if (updates.firstName) {
-        changes.push(new ldap.Change({
-          operation: 'replace',
-          modification: {
-            type: 'givenName',
-            values: [updates.firstName],
-          },
-        }));
+        changes.push(
+          new ldap.Change({
+            operation: 'replace',
+            modification: {
+              type: 'givenName',
+              values: [updates.firstName],
+            },
+          })
+        );
       }
 
       if (updates.lastName) {
-        changes.push(new ldap.Change({
-          operation: 'replace',
-          modification: {
-            type: 'sn',
-            values: [updates.lastName],
-          },
-        }));
+        changes.push(
+          new ldap.Change({
+            operation: 'replace',
+            modification: {
+              type: 'sn',
+              values: [updates.lastName],
+            },
+          })
+        );
       }
 
       if (updates.enabled !== undefined) {
@@ -241,16 +283,18 @@ class ActiveDirectoryService {
         if (user) {
           const currentUAC = parseInt((user.attributes as any).userAccountControl || '512');
           const newUAC = updates.enabled
-            ? (currentUAC & ~0x0002) // Clear disabled bit
-            : (currentUAC | 0x0002);  // Set disabled bit
+            ? currentUAC & ~0x0002 // Clear disabled bit
+            : currentUAC | 0x0002; // Set disabled bit
 
-          changes.push(new ldap.Change({
-            operation: 'replace',
-            modification: {
-              type: 'userAccountControl',
-              values: [newUAC.toString()],
-            },
-          }));
+          changes.push(
+            new ldap.Change({
+              operation: 'replace',
+              modification: {
+                type: 'userAccountControl',
+                values: [newUAC.toString()],
+              },
+            })
+          );
         }
       }
 

@@ -16,6 +16,8 @@ import authRoutes from './routes/auth.routes';
 import accountRoutes from './routes/account.routes';
 import networkRoutes from './routes/network.routes';
 
+import { bootstrapAdminUser } from './utils/bootstrapAdmin';
+
 // Load environment variables
 dotenv.config();
 
@@ -106,6 +108,24 @@ const startServer = async () => {
     // Connect to Redis
     await connectRedis();
     logger.info('Connected to Redis');
+
+    // Optional: bootstrap (or reset) a local dashboard admin user.
+    // This helps recover access if credentials are lost.
+    const adminUser = process.env.ADMIN_BOOTSTRAP_USERNAME;
+    const adminEmail = process.env.ADMIN_BOOTSTRAP_EMAIL;
+    const adminPass = process.env.ADMIN_BOOTSTRAP_PASSWORD;
+
+    if (adminUser && adminEmail && adminPass) {
+      const forceReset = (process.env.ADMIN_BOOTSTRAP_FORCE_RESET || '').toLowerCase() === 'true';
+      await bootstrapAdminUser({
+        username: adminUser,
+        email: adminEmail,
+        password: adminPass,
+        firstName: process.env.ADMIN_BOOTSTRAP_FIRST_NAME,
+        lastName: process.env.ADMIN_BOOTSTRAP_LAST_NAME,
+        forceReset,
+      });
+    }
 
     // Start Express server
     app.listen(PORT, () => {

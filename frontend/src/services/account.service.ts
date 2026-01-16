@@ -1,9 +1,9 @@
 import api from './api';
-import { ApiResponse, SearchResult, UnifiedAccount, AccountSource } from '../types';
+import { ApiResponse, AggregatedSearchResult, UnifiedAccount, AccountSource } from '../types';
 
 export const accountService = {
-  async searchAccounts(query: string): Promise<SearchResult[]> {
-    const response = await api.get<ApiResponse<SearchResult[]>>(
+  async searchAccounts(query: string): Promise<AggregatedSearchResult[]> {
+    const response = await api.get<ApiResponse<AggregatedSearchResult[]>>(
       `/accounts/search?query=${encodeURIComponent(query)}`
     );
 

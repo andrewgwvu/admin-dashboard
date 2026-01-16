@@ -91,6 +91,21 @@ export interface SearchResult {
   attributes: Record<string, any>;
 }
 
+/**
+ * A single person-level search hit that may include matches from multiple sources.
+ *
+ * `key` is a stable identifier used by the frontend to open a unified account view.
+ * We prefer username when available, otherwise email, otherwise a source-specific id.
+ */
+export interface AggregatedSearchResult {
+  key: string;
+  displayName: string;
+  email?: string;
+  username?: string;
+  matches: SearchResult[];
+  sources: Array<'jumpcloud' | 'okta' | 'active-directory'>;
+}
+
 export interface ApiResponse<T = any> {
   success: boolean;
   data?: T;
