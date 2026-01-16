@@ -18,12 +18,20 @@ class AccountService {
 
       if (jumpcloudResults.status === 'fulfilled') {
         allResults.push(...jumpcloudResults.value);
+      } else {
+        logger.warn('JumpCloud search failed:', jumpcloudResults.reason);
       }
+
       if (oktaResults.status === 'fulfilled') {
         allResults.push(...oktaResults.value);
+      } else {
+        logger.warn('Okta search failed:', oktaResults.reason);
       }
+
       if (adResults.status === 'fulfilled') {
         allResults.push(...adResults.value);
+      } else {
+        logger.warn('Active Directory search failed:', adResults.reason);
       }
 
       // Deduplicate results based on email
