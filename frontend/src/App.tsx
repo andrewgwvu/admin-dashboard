@@ -5,6 +5,10 @@ import DashboardPage from './pages/DashboardPage';
 import AccountsPage from './pages/AccountsPage';
 import AccountDetailPage from './pages/AccountDetailPage';
 import NetworkPage from './pages/NetworkPage';
+import AdminDashboardPage from './pages/AdminDashboardPage';
+import AdminUsersPage from './pages/AdminUsersPage';
+import AdminConfigPage from './pages/AdminConfigPage';
+import AdminAuditLogsPage from './pages/AdminAuditLogsPage';
 import Layout from './components/Layout';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -12,6 +16,21 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  return <>{children}</>;
+}
+
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const isAuthenticated = authService.isAuthenticated();
+  const user = authService.getCurrentUser();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (user?.role !== 'admin') {
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;
@@ -34,6 +53,38 @@ function App() {
           <Route path="accounts" element={<AccountsPage />} />
           <Route path="accounts/:identifier" element={<AccountDetailPage />} />
           <Route path="network" element={<NetworkPage />} />
+          <Route
+            path="admin"
+            element={
+              <AdminRoute>
+                <AdminDashboardPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="admin/users"
+            element={
+              <AdminRoute>
+                <AdminUsersPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="admin/config"
+            element={
+              <AdminRoute>
+                <AdminConfigPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="admin/audit-logs"
+            element={
+              <AdminRoute>
+                <AdminAuditLogsPage />
+              </AdminRoute>
+            }
+          />
         </Route>
       </Routes>
     </Router>
