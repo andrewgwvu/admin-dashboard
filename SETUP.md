@@ -230,6 +230,23 @@ Example DN: `CN=ServiceAccount,CN=Users,DC=yourdomain,DC=local`
 
 ## Troubleshooting
 
+### Docker Build Issues
+
+If you encounter errors during `docker-compose build`:
+
+**"npm ci requires package-lock.json":**
+- This should be resolved as package-lock.json files are included
+- If still missing, run `npm install` in backend/ and frontend/ directories to generate them
+
+**Build timeout or network errors:**
+- Increase Docker build memory: Docker Desktop → Settings → Resources
+- Check your internet connection
+- Try building images separately: `docker-compose build backend` then `docker-compose build frontend`
+
+**Package version conflicts:**
+- All package versions have been verified and locked
+- If issues persist, clear Docker cache: `docker system prune -a` (warning: removes all unused images)
+
 ### Database Connection Issues
 
 If the backend can't connect to PostgreSQL:
