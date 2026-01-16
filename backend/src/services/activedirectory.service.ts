@@ -66,11 +66,14 @@ class ActiveDirectoryService {
               const attrs = entry.pojo.attributes;
               const getAttr = (name: string) => attrs.find((a: any) => a.type === name)?.values[0];
 
+              const dn = getAttr('distinguishedName');
+              if (!dn) return; // Skip entries without DN
+
               results.push({
                 source: 'active-directory' as const,
                 type: 'user' as const,
-                id: getAttr('distinguishedName'),
-                displayName: getAttr('displayName') || `${getAttr('givenName')} ${getAttr('sn')}`,
+                id: dn,
+                displayName: getAttr('displayName') || `${getAttr('givenName') || ''} ${getAttr('sn') || ''}`.trim() || 'Unknown',
                 email: getAttr('mail'),
                 username: getAttr('sAMAccountName'),
                 attributes: entry.pojo,
@@ -98,7 +101,7 @@ class ActiveDirectoryService {
     try {
       const client = await this.getClient();
 
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve) => {
         client.search(
           dn,
           {
@@ -129,12 +132,12 @@ class ActiveDirectoryService {
 
               foundUser = {
                 source: 'active-directory',
-                sourceId: getAttr('distinguishedName'),
-                username: getAttr('sAMAccountAccount'),
-                email: getAttr('mail'),
-                firstName: getAttr('givenName'),
-                lastName: getAttr('sn'),
-                displayName: getAttr('displayName') || `${getAttr('givenName')} ${getAttr('sn')}`,
+                sourceId: getAttr('distinguishedName') || dn,
+                username: getAttr('sAMAccountName') || '',
+                email: getAttr('mail') || '',
+                firstName: getAttr('givenName') || '',
+                lastName: getAttr('sn') || '',
+                displayName: getAttr('displayName') || `${getAttr('givenName') || ''} ${getAttr('sn') || ''}`.trim() || 'Unknown',
                 enabled: !accountDisabled,
                 locked: accountLocked,
                 passwordLastSet,
@@ -160,7 +163,7 @@ class ActiveDirectoryService {
     }
   }
 
-  async getMFADevices(userId: string): Promise<MFADevice[]> {
+  async getMFADevices(_userId: string): Promise<MFADevice[]> {
     // Active Directory MFA is typically handled by separate systems
     // like Azure MFA, Duo, or third-party solutions
     // This would need to be customized based on your specific MFA implementation
@@ -225,7 +228,7 @@ class ActiveDirectoryService {
         return true;
       }
 
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve) => {
         client.modify(dn, changes, (err) => {
           if (err) {
             logger.error('AD updateUser error:', err);
@@ -255,7 +258,7 @@ class ActiveDirectoryService {
         },
       });
 
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve) => {
         client.modify(dn, change, (err) => {
           if (err) {
             logger.error('AD expirePassword error:', err);
@@ -285,7 +288,7 @@ class ActiveDirectoryService {
         },
       });
 
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve) => {
         client.modify(dn, change, (err) => {
           if (err) {
             logger.error('AD unlockUser error:', err);

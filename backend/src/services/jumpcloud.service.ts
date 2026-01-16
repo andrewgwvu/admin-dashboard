@@ -5,11 +5,11 @@ import logger from '../config/logger';
 class JumpCloudService {
   private client: AxiosInstance;
   private apiKey: string;
-  private orgId: string;
+  // private orgId: string; // Unused for now, may be needed for multi-org setups
 
   constructor() {
     this.apiKey = process.env.JUMPCLOUD_API_KEY || '';
-    this.orgId = process.env.JUMPCLOUD_ORG_ID || '';
+    // this.orgId = process.env.JUMPCLOUD_ORG_ID || '';
 
     this.client = axios.create({
       baseURL: 'https://console.jumpcloud.com/api',
