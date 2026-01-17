@@ -5,8 +5,8 @@ export default function DashboardPage() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="mt-2 text-gray-600">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+        <p className="mt-2 text-gray-600 dark:text-gray-400">
           Welcome to your homelab management dashboard
         </p>
       </div>
@@ -15,19 +15,19 @@ export default function DashboardPage() {
         {/* Account Management Card */}
         <Link
           to="/accounts"
-          className="bg-white overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow"
+          className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow"
         >
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <Users className="h-6 w-6 text-blue-600" />
+                <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">
+                  <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
                     Account Management
                   </dt>
-                  <dd className="text-xs text-gray-400 mt-1">
+                  <dd className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                     Search and manage user accounts
                   </dd>
                 </dl>
@@ -39,19 +39,19 @@ export default function DashboardPage() {
         {/* Network Management Card */}
         <Link
           to="/network"
-          className="bg-white overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow"
+          className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow"
         >
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <Network className="h-6 w-6 text-green-600" />
+                <Network className="h-6 w-6 text-green-600 dark:text-green-400" />
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">
+                  <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
                     Network Management
                   </dt>
-                  <dd className="text-xs text-gray-400 mt-1">
+                  <dd className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                     Manage network devices and clients
                   </dd>
                 </dl>
@@ -61,18 +61,18 @@ export default function DashboardPage() {
         </Link>
 
         {/* Identity Sources Card */}
-        <div className="bg-white overflow-hidden shadow rounded-lg">
+        <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <Server className="h-6 w-6 text-purple-600" />
+                <Server className="h-6 w-6 text-purple-600 dark:text-purple-400" />
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">
+                  <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
                     Identity Sources
                   </dt>
-                  <dd className="text-xs text-gray-400 mt-1">
+                  <dd className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                     JumpCloud, Okta, Active Directory
                   </dd>
                 </dl>
@@ -82,18 +82,18 @@ export default function DashboardPage() {
         </div>
 
         {/* Status Card */}
-        <div className="bg-white overflow-hidden shadow rounded-lg">
+        <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <Activity className="h-6 w-6 text-orange-600" />
+                <Activity className="h-6 w-6 text-orange-600 dark:text-orange-400" />
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">
+                  <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
                     System Status
                   </dt>
-                  <dd className="text-xs text-gray-400 mt-1">
+                  <dd className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                     All systems operational
                   </dd>
                 </dl>
@@ -103,24 +103,24 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="mt-8 bg-white shadow rounded-lg p-6">
-        <h2 className="text-lg font-medium text-gray-900 mb-4">Quick Actions</h2>
+      <div className="mt-8 bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+        <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Quick Actions</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Link
             to="/accounts"
-            className="px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
           >
-            <h3 className="text-sm font-medium text-gray-900">Search Accounts</h3>
-            <p className="text-xs text-gray-500 mt-1">
+            <h3 className="text-sm font-medium text-gray-900 dark:text-white">Search Accounts</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               Find and manage user accounts across all identity sources
             </p>
           </Link>
           <Link
             to="/network"
-            className="px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
           >
-            <h3 className="text-sm font-medium text-gray-900">View Network Devices</h3>
-            <p className="text-xs text-gray-500 mt-1">
+            <h3 className="text-sm font-medium text-gray-900 dark:text-white">View Network Devices</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               Monitor and manage your network infrastructure
             </p>
           </Link>

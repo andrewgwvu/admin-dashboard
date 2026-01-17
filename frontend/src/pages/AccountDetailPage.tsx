@@ -193,20 +193,20 @@ export default function AccountDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="animate-spin h-8 w-8 text-blue-600" />
+        <Loader2 className="animate-spin h-8 w-8 text-blue-600 dark:text-blue-400" />
       </div>
     );
   }
 
   if (error || !account || !primaryAccount) {
     return (
-      <div className="bg-white shadow rounded-lg p-12 text-center">
+      <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-12 text-center">
         <AlertCircle className="mx-auto h-12 w-12 text-red-400" />
-        <h3 className="mt-2 text-sm font-medium text-gray-900">Error loading account</h3>
-        <p className="mt-1 text-sm text-gray-500">{error}</p>
+        <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">Error loading account</h3>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{error}</p>
         <button
           onClick={() => navigate('/accounts')}
-          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
         >
           Back to Accounts
         </button>
@@ -219,8 +219,8 @@ export default function AccountDetailPage() {
       onClick={() => setTab(id)}
       className={`inline-flex items-center px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
         tab === id
-          ? 'border-blue-600 text-blue-700'
-          : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+          ? 'border-blue-600 dark:border-blue-400 text-blue-700 dark:text-blue-400'
+          : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600'
       }`}
     >
       <span className="mr-2">{icon}</span>
@@ -234,16 +234,16 @@ export default function AccountDetailPage() {
       <div className="mb-6">
         <button
           onClick={() => navigate('/accounts')}
-          className="flex items-center text-sm text-gray-600 hover:text-gray-900 mb-4"
+          className="flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 mb-4"
         >
           <ArrowLeft className="h-4 w-4 mr-1" />
           Back to Accounts
         </button>
-        <h1 className="text-3xl font-bold text-gray-900">{primaryAccount.displayName}</h1>
-        <p className="mt-1 text-gray-600">{primaryAccount.email || '(no email)'}</p>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{primaryAccount.displayName}</h1>
+        <p className="mt-1 text-gray-600 dark:text-gray-300">{primaryAccount.email || '(no email)'}</p>
 
         {/* Tabs */}
-        <div className="mt-5 border-b border-gray-200 flex gap-2">
+        <div className="mt-5 border-b border-gray-200 dark:border-gray-700 flex gap-2">
           <TabButton id="overview" label="Overview" icon={<Layers className="h-4 w-4" />} />
           <TabButton id="accounts" label="Accounts" icon={<User className="h-4 w-4" />} />
           <TabButton id="mfa" label="MFA" icon={<Fingerprint className="h-4 w-4" />} />
@@ -254,30 +254,30 @@ export default function AccountDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white shadow rounded-lg p-6">
-              <h2 className="text-lg font-medium text-gray-900 mb-4">Summary</h2>
+            <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+              <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Summary</h2>
               <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div>
-                  <dt className="text-gray-500">Username</dt>
-                  <dd className="text-gray-900 font-medium">{primaryAccount.username || '—'}</dd>
+                  <dt className="text-gray-500 dark:text-gray-400">Username</dt>
+                  <dd className="text-gray-900 dark:text-white font-medium">{primaryAccount.username || '—'}</dd>
                 </div>
                 <div>
-                  <dt className="text-gray-500">Email</dt>
-                  <dd className="text-gray-900">{primaryAccount.email || '—'}</dd>
+                  <dt className="text-gray-500 dark:text-gray-400">Email</dt>
+                  <dd className="text-gray-900 dark:text-white">{primaryAccount.email || '—'}</dd>
                 </div>
                 <div>
-                  <dt className="text-gray-500">Account Sources</dt>
-                  <dd className="text-gray-900">{account.accounts.length}</dd>
+                  <dt className="text-gray-500 dark:text-gray-400">Account Sources</dt>
+                  <dd className="text-gray-900 dark:text-white">{account.accounts.length}</dd>
                 </div>
                 <div>
-                  <dt className="text-gray-500">MFA Devices</dt>
-                  <dd className="text-gray-900">{account.mfaDevices.length}</dd>
+                  <dt className="text-gray-500 dark:text-gray-400">MFA Devices</dt>
+                  <dd className="text-gray-900 dark:text-white">{account.mfaDevices.length}</dd>
                 </div>
               </dl>
 
-              <div className="mt-6 text-sm text-gray-600">
+              <div className="mt-6 text-sm text-gray-600 dark:text-gray-300">
                 This user has matching accounts in:{' '}
-                <span className="text-gray-900 font-medium">
+                <span className="text-gray-900 dark:text-white font-medium">
                   {account.accounts
                     .map((a) => (a.source === 'active-directory' ? 'AD' : a.source === 'jumpcloud' ? 'JumpCloud' : 'Okta'))
                     .join(', ')}
@@ -285,31 +285,31 @@ export default function AccountDetailPage() {
               </div>
             </div>
 
-            <div className="bg-white shadow rounded-lg p-6">
-              <h2 className="text-lg font-medium text-gray-900 mb-4">Status</h2>
+            <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+              <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Status</h2>
               <div className="space-y-2">
                 {account.accounts.some((a) => !a.enabled) && (
                   <div className="flex items-center text-sm">
                     <div className="h-2 w-2 rounded-full bg-red-500 mr-2" />
-                    <span className="text-gray-700">Account disabled in some sources</span>
+                    <span className="text-gray-700 dark:text-gray-300">Account disabled in some sources</span>
                   </div>
                 )}
                 {account.accounts.some((a) => a.locked) && (
                   <div className="flex items-center text-sm">
                     <div className="h-2 w-2 rounded-full bg-yellow-500 mr-2" />
-                    <span className="text-gray-700">Account locked in some sources</span>
+                    <span className="text-gray-700 dark:text-gray-300">Account locked in some sources</span>
                   </div>
                 )}
                 {account.mfaDevices.length === 0 && (
                   <div className="flex items-center text-sm">
                     <div className="h-2 w-2 rounded-full bg-orange-500 mr-2" />
-                    <span className="text-gray-700">No MFA devices found</span>
+                    <span className="text-gray-700 dark:text-gray-300">No MFA devices found</span>
                   </div>
                 )}
                 {account.accounts.every((a) => a.enabled) && !account.accounts.some((a) => a.locked) && (
                   <div className="flex items-center text-sm">
                     <div className="h-2 w-2 rounded-full bg-green-500 mr-2" />
-                    <span className="text-gray-700">All systems operational</span>
+                    <span className="text-gray-700 dark:text-gray-300">All systems operational</span>
                   </div>
                 )}
               </div>
@@ -318,51 +318,51 @@ export default function AccountDetailPage() {
 
           {/* Right */}
           <div className="space-y-6">
-            <div className="bg-white shadow rounded-lg p-6">
-              <h2 className="text-lg font-medium text-gray-900 mb-4">Quick Info</h2>
+            <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+              <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Quick Info</h2>
               <dl className="space-y-3">
                 <div>
-                  <dt className="text-sm text-gray-500 flex items-center">
+                  <dt className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
                     <User className="h-4 w-4 mr-2" />
                     Full Name
                   </dt>
-                  <dd className="text-sm font-medium text-gray-900 ml-6">
+                  <dd className="text-sm font-medium text-gray-900 dark:text-white ml-6">
                     {primaryAccount.firstName} {primaryAccount.lastName}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-sm text-gray-500 flex items-center">
+                  <dt className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
                     <Mail className="h-4 w-4 mr-2" />
                     Email
                   </dt>
-                  <dd className="text-sm font-medium text-gray-900 ml-6">
+                  <dd className="text-sm font-medium text-gray-900 dark:text-white ml-6">
                     {primaryAccount.email || '—'}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-sm text-gray-500 flex items-center">
+                  <dt className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
                     <Shield className="h-4 w-4 mr-2" />
                     MFA Devices
                   </dt>
-                  <dd className="text-sm font-medium text-gray-900 ml-6">
+                  <dd className="text-sm font-medium text-gray-900 dark:text-white ml-6">
                     {account.mfaDevices.length}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-sm text-gray-500 flex items-center">
+                  <dt className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
                     <Calendar className="h-4 w-4 mr-2" />
                     Account Sources
                   </dt>
-                  <dd className="text-sm font-medium text-gray-900 ml-6">
+                  <dd className="text-sm font-medium text-gray-900 dark:text-white ml-6">
                     {account.accounts.length}
                   </dd>
                 </div>
               </dl>
             </div>
 
-            <div className="bg-white shadow rounded-lg p-6">
-              <h2 className="text-lg font-medium text-gray-900 mb-4">Actions</h2>
-              <p className="text-sm text-gray-600 mb-4">
+            <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+              <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Actions</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
                 Actions run against a specific source account. Use the Accounts tab to pick the account.
               </p>
               <div className="space-y-3">
@@ -370,12 +370,12 @@ export default function AccountDetailPage() {
                   const acc = accountsBySource.get(source);
                   if (!acc) return null;
                   return (
-                    <div key={source} className="border border-gray-200 rounded-lg p-3">
+                    <div key={source} className="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-gray-900">{formatSourceName(source)}</span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">{formatSourceName(source)}</span>
                         <span
                           className={`px-2 py-1 text-xs rounded-full ${
-                            acc.enabled ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            acc.enabled ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
                           }`}
                         >
                           {acc.enabled ? 'Active' : 'Disabled'}
@@ -385,21 +385,21 @@ export default function AccountDetailPage() {
                         <button
                           onClick={() => handleExpirePassword(acc.source, acc.sourceId)}
                           disabled={!!actionLoading}
-                          className="px-3 py-1 text-sm bg-yellow-100 text-yellow-800 rounded hover:bg-yellow-200 disabled:opacity-50"
+                          className="px-3 py-1 text-sm bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 rounded hover:bg-yellow-200 dark:hover:bg-yellow-900/50 disabled:opacity-50"
                         >
                           Expire Password
                         </button>
                         <button
                           onClick={() => handleSuspendAccount(acc.source, acc.sourceId)}
                           disabled={!!actionLoading}
-                          className="px-3 py-1 text-sm bg-red-100 text-red-800 rounded hover:bg-red-200 disabled:opacity-50"
+                          className="px-3 py-1 text-sm bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-900/50 disabled:opacity-50"
                         >
                           Suspend
                         </button>
                         <button
                           onClick={() => handleResetMFA(acc.source, acc.sourceId)}
                           disabled={!!actionLoading}
-                          className="px-3 py-1 text-sm bg-blue-100 text-blue-800 rounded hover:bg-blue-200 disabled:opacity-50"
+                          className="px-3 py-1 text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-900/50 disabled:opacity-50"
                         >
                           Reset MFA
                         </button>
@@ -415,74 +415,74 @@ export default function AccountDetailPage() {
 
       {tab === 'accounts' && (
         <div className="space-y-6">
-          <div className="bg-white shadow rounded-lg overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-medium text-gray-900">Accounts</h2>
-              <p className="text-sm text-gray-600 mt-1">
+          <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-lg font-medium text-gray-900 dark:text-white">Accounts</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
                 This view aggregates matching accounts from Okta, JumpCloud, and Active Directory.
               </p>
             </div>
-            <div className="divide-y divide-gray-200">
+            <div className="divide-y divide-gray-200 dark:divide-gray-700">
               {account.accounts.map((acc) => (
                 <div key={`${acc.source}-${acc.sourceId}`} className="px-6 py-6">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <h3 className="text-base font-semibold text-gray-900">{formatSourceName(acc.source)}</h3>
-                      <p className="text-sm text-gray-600 mt-1">
-                        <span className="font-medium text-gray-800">{acc.username || '—'}</span>
+                      <h3 className="text-base font-semibold text-gray-900 dark:text-white">{formatSourceName(acc.source)}</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                        <span className="font-medium text-gray-800 dark:text-gray-200">{acc.username || '—'}</span>
                         {acc.email ? <span className="ml-3">{acc.email}</span> : null}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
                       <span
                         className={`px-2 py-1 text-xs rounded-full ${
-                          acc.enabled ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          acc.enabled ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
                         }`}
                       >
                         {acc.enabled ? 'Active' : 'Disabled'}
                       </span>
                       {acc.locked && (
-                        <span className="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800">Locked</span>
+                        <span className="px-2 py-1 text-xs rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300">Locked</span>
                       )}
                     </div>
                   </div>
 
                   <dl className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
                     <div>
-                      <dt className="text-gray-500">Source ID</dt>
-                      <dd className="text-gray-900 font-mono text-xs break-all">{acc.sourceId}</dd>
+                      <dt className="text-gray-500 dark:text-gray-400">Source ID</dt>
+                      <dd className="text-gray-900 dark:text-white font-mono text-xs break-all">{acc.sourceId}</dd>
                     </div>
                     <div>
-                      <dt className="text-gray-500">MFA</dt>
-                      <dd className="text-gray-900">{acc.mfaEnabled ? 'Enabled' : 'Disabled'}</dd>
+                      <dt className="text-gray-500 dark:text-gray-400">MFA</dt>
+                      <dd className="text-gray-900 dark:text-white">{acc.mfaEnabled ? 'Enabled' : 'Disabled'}</dd>
                     </div>
                     <div>
-                      <dt className="text-gray-500">Password Last Set</dt>
-                      <dd className="text-gray-900">
+                      <dt className="text-gray-500 dark:text-gray-400">Password Last Set</dt>
+                      <dd className="text-gray-900 dark:text-white">
                         {acc.passwordLastSet ? new Date(acc.passwordLastSet).toLocaleString() : '—'}
                       </dd>
                     </div>
                     <div>
-                      <dt className="text-gray-500">Last Login</dt>
-                      <dd className="text-gray-900">{acc.lastLogin ? new Date(acc.lastLogin).toLocaleString() : '—'}</dd>
+                      <dt className="text-gray-500 dark:text-gray-400">Last Login</dt>
+                      <dd className="text-gray-900 dark:text-white">{acc.lastLogin ? new Date(acc.lastLogin).toLocaleString() : '—'}</dd>
                     </div>
                   </dl>
 
                   <div className="mt-6">
                     <details className="group">
-                      <summary className="cursor-pointer select-none text-sm font-medium text-blue-700 hover:text-blue-800">
+                      <summary className="cursor-pointer select-none text-sm font-medium text-blue-700 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">
                         View all attributes
-                        <span className="ml-2 text-gray-500 font-normal">({allAttributesBySource[acc.source]?.length || 0})</span>
+                        <span className="ml-2 text-gray-500 dark:text-gray-400 font-normal">({allAttributesBySource[acc.source]?.length || 0})</span>
                       </summary>
-                      <div className="mt-4 border border-gray-200 rounded-lg overflow-hidden">
+                      <div className="mt-4 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-0">
                           {(allAttributesBySource[acc.source] || []).map((attr) => (
                             <div
                               key={attr.key}
-                              className="px-4 py-3 border-b border-gray-200 sm:border-b-0 sm:border-r border-gray-200 last:border-b-0"
+                              className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 sm:border-b-0 sm:border-r border-gray-200 dark:border-gray-700 last:border-b-0"
                             >
-                              <div className="text-xs text-gray-500 break-all">{attr.key}</div>
-                              <div className="text-sm text-gray-900 mt-1 break-all font-mono">
+                              <div className="text-xs text-gray-500 dark:text-gray-400 break-all">{attr.key}</div>
+                              <div className="text-sm text-gray-900 dark:text-white mt-1 break-all font-mono">
                                 {attr.value}
                               </div>
                             </div>
@@ -496,21 +496,21 @@ export default function AccountDetailPage() {
                     <button
                       onClick={() => handleExpirePassword(acc.source, acc.sourceId)}
                       disabled={!!actionLoading}
-                      className="px-3 py-1 text-sm bg-yellow-100 text-yellow-800 rounded hover:bg-yellow-200 disabled:opacity-50"
+                      className="px-3 py-1 text-sm bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 rounded hover:bg-yellow-200 dark:hover:bg-yellow-900/50 disabled:opacity-50"
                     >
                       Expire Password
                     </button>
                     <button
                       onClick={() => handleSuspendAccount(acc.source, acc.sourceId)}
                       disabled={!!actionLoading}
-                      className="px-3 py-1 text-sm bg-red-100 text-red-800 rounded hover:bg-red-200 disabled:opacity-50"
+                      className="px-3 py-1 text-sm bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-900/50 disabled:opacity-50"
                     >
                       Suspend Account
                     </button>
                     <button
                       onClick={() => handleResetMFA(acc.source, acc.sourceId)}
                       disabled={!!actionLoading}
-                      className="px-3 py-1 text-sm bg-blue-100 text-blue-800 rounded hover:bg-blue-200 disabled:opacity-50"
+                      className="px-3 py-1 text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-900/50 disabled:opacity-50"
                     >
                       Reset MFA
                     </button>
@@ -523,9 +523,9 @@ export default function AccountDetailPage() {
       )}
 
       {tab === 'mfa' && (
-        <div className="bg-white shadow rounded-lg overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-            <h2 className="text-lg font-medium text-gray-900">MFA Devices</h2>
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <h2 className="text-lg font-medium text-gray-900 dark:text-white">MFA Devices</h2>
             <button
               onClick={() => {
                 if (account.accounts.length > 0) {
@@ -533,26 +533,26 @@ export default function AccountDetailPage() {
                 }
               }}
               disabled={!!actionLoading || account.mfaDevices.length === 0}
-              className="px-3 py-1 text-sm bg-blue-100 text-blue-800 rounded hover:bg-blue-200 disabled:opacity-50"
+              className="px-3 py-1 text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-900/50 disabled:opacity-50"
             >
               Reset All MFA
             </button>
           </div>
 
           {account.mfaDevices.length > 0 ? (
-            <div className="divide-y divide-gray-200">
+            <div className="divide-y divide-gray-200 dark:divide-gray-700">
               {account.mfaDevices.map((device) => (
                 <div key={device.id} className="px-6 py-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{device.name}</p>
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">{device.name}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                         Type: {device.type} • Source: {formatSourceName(device.source)}
                       </p>
                     </div>
                     <span
                       className={`px-2 py-1 text-xs rounded-full ${
-                        device.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                        device.status === 'active' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
                       }`}
                     >
                       {device.status}
@@ -562,7 +562,7 @@ export default function AccountDetailPage() {
               ))}
             </div>
           ) : (
-            <div className="px-6 py-8 text-center text-gray-500">No MFA devices enrolled</div>
+            <div className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">No MFA devices enrolled</div>
           )}
         </div>
       )}
