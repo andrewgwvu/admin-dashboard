@@ -1,4 +1,4 @@
-import { query, connectDB } from '../config/database';
+import { query } from '../config/database';
 import logger from '../config/logger';
 
 /**
@@ -7,8 +7,6 @@ import logger from '../config/logger';
  */
 async function promoteUserToAdmin(username: string) {
   try {
-    await connectDB();
-
     // Check if user exists
     const userResult = await query(
       'SELECT id, username, email, role FROM users WHERE username = $1',
