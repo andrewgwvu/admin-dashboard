@@ -77,6 +77,26 @@ npm install
 npm run dev
 ```
 
+### Setting Up Admin Users
+
+By default, all registered users have the 'user' role. To promote a user to admin and enable access to the Administration menu:
+
+```bash
+cd backend
+npm run promote-admin <username>
+```
+
+For example:
+```bash
+npm run promote-admin dash-admin
+```
+
+After promoting a user to admin, they will need to log out and log back in for the changes to take effect. Once logged in as an admin, they will see the "Administration" section in the sidebar with access to:
+- Admin Dashboard
+- User Management
+- Configuration
+- Audit Logs
+
 ## Configuration
 
 ### JumpCloud
