@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { authService } from './services/auth.service';
+import { DarkModeProvider } from './contexts/DarkModeContext';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import AccountsPage from './pages/AccountsPage';
@@ -38,56 +39,58 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <Layout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<DashboardPage />} />
-          <Route path="accounts" element={<AccountsPage />} />
-          <Route path="accounts/:identifier" element={<AccountDetailPage />} />
-          <Route path="network" element={<NetworkPage />} />
+    <DarkModeProvider>
+      <Router>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
           <Route
-            path="admin"
+            path="/"
             element={
-              <AdminRoute>
-                <AdminDashboardPage />
-              </AdminRoute>
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
             }
-          />
-          <Route
-            path="admin/users"
-            element={
-              <AdminRoute>
-                <AdminUsersPage />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="admin/config"
-            element={
-              <AdminRoute>
-                <AdminConfigPage />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="admin/audit-logs"
-            element={
-              <AdminRoute>
-                <AdminAuditLogsPage />
-              </AdminRoute>
-            }
-          />
-        </Route>
-      </Routes>
-    </Router>
+          >
+            <Route index element={<DashboardPage />} />
+            <Route path="accounts" element={<AccountsPage />} />
+            <Route path="accounts/:identifier" element={<AccountDetailPage />} />
+            <Route path="network" element={<NetworkPage />} />
+            <Route
+              path="admin"
+              element={
+                <AdminRoute>
+                  <AdminDashboardPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="admin/users"
+              element={
+                <AdminRoute>
+                  <AdminUsersPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="admin/config"
+              element={
+                <AdminRoute>
+                  <AdminConfigPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="admin/audit-logs"
+              element={
+                <AdminRoute>
+                  <AdminAuditLogsPage />
+                </AdminRoute>
+              }
+            />
+          </Route>
+        </Routes>
+      </Router>
+    </DarkModeProvider>
   );
 }
 
