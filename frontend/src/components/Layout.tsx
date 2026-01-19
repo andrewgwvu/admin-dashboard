@@ -1,13 +1,15 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Users, Network, Home, LogOut, Shield, Settings, FileText, Moon, Sun } from 'lucide-react';
+import { Users, Network, Home, LogOut, Shield, Settings, FileText, Moon, Sun, Menu, X } from 'lucide-react';
 import { authService } from '../services/auth.service';
 import { useDarkMode } from '../contexts/DarkModeContext';
+import { useState } from 'react';
 
 export default function Layout() {
   const location = useLocation();
   const user = authService.getCurrentUser();
   const isAdmin = user?.role === 'admin';
   const { isDarkMode, toggleDarkMode } = useDarkMode();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const navigation = [
     { name: 'Dashboard', href: '/', icon: Home },
@@ -28,11 +30,42 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Mobile header with hamburger */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 z-40 flex items-center justify-between px-4">
+        <h1 className="text-lg font-bold text-gray-900 dark:text-white">Homelab Dashboard</h1>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggleDarkMode}
+            className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+          </button>
+          <button
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            title="Toggle menu"
+          >
+            {isSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile overlay */}
+      {isSidebarOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <div className="fixed inset-y-0 left-0 w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
+      <div className={`fixed inset-y-0 left-0 w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-50 transform transition-transform duration-300 ease-in-out ${
+        isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+      } lg:translate-x-0`}>
         <div className="flex flex-col h-full">
-          {/* Logo */}
-          <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 dark:border-gray-700">
+          {/* Logo - Desktop only */}
+          <div className="hidden lg:flex items-center justify-between h-16 px-6 border-b border-gray-200 dark:border-gray-700">
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">Homelab Dashboard</h1>
             <button
               onClick={toggleDarkMode}
@@ -40,6 +73,17 @@ export default function Layout() {
               title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
             >
               {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
+          </div>
+
+          {/* Mobile close button */}
+          <div className="lg:hidden flex items-center justify-between h-16 px-6 border-b border-gray-200 dark:border-gray-700">
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">Menu</h1>
+            <button
+              onClick={() => setIsSidebarOpen(false)}
+              className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
+              <X className="w-6 h-6" />
             </button>
           </div>
 
@@ -53,6 +97,7 @@ export default function Layout() {
                 <Link
                   key={item.name}
                   to={item.href}
+                  onClick={() => setIsSidebarOpen(false)}
                   className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
                     isActive
                       ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
@@ -81,6 +126,7 @@ export default function Layout() {
                     <Link
                       key={item.name}
                       to={item.href}
+                      onClick={() => setIsSidebarOpen(false)}
                       className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
                         isActive
                           ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'
@@ -125,8 +171,8 @@ export default function Layout() {
       </div>
 
       {/* Main content */}
-      <div className="ml-64">
-        <main className="p-8">
+      <div className="lg:ml-64 pt-16 lg:pt-0">
+        <main className="p-4 sm:p-6 lg:p-8">
           <Outlet />
         </main>
       </div>

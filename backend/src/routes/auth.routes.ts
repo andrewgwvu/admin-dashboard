@@ -8,4 +8,8 @@ router.post('/login', authController.login);
 router.post('/register', authController.register);
 router.get('/verify', authController.verifyToken);
 
+// SSO routes
+router.get('/okta/login', authController.oktaSSOLogin);
+router.get('/okta/callback', authController.oktaSSOCallback);
+
 export default router;

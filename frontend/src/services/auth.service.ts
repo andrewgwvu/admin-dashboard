@@ -53,4 +53,31 @@ export const authService = {
     const userStr = localStorage.getItem('user');
     return userStr ? JSON.parse(userStr) : null;
   },
+
+  async initiateOktaSSO(): Promise<string> {
+    const response = await api.get<ApiResponse<{ authUrl: string; state: string }>>('/auth/okta/login');
+
+    if (response.success && response.data) {
+      return response.data.authUrl;
+    }
+
+    throw new Error(response.error || 'Failed to initiate SSO');
+  },
+
+  handleSSOCallback(token: string): void {
+    localStorage.setItem('token', token);
+    // Fetch user info using the token
+    this.fetchUserInfo();
+  },
+
+  async fetchUserInfo(): Promise<void> {
+    try {
+      const response = await api.get<ApiResponse<any>>('/auth/verify');
+      if (response.success && response.data) {
+        localStorage.setItem('user', JSON.stringify(response.data));
+      }
+    } catch (error) {
+      console.error('Failed to fetch user info:', error);
+    }
+  },
 };

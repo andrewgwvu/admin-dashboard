@@ -21,4 +21,14 @@ router.post('/clients/:clientMac/unblock', networkController.unblockClient);
 router.get('/settings', networkController.getSiteSettings);
 router.get('/wlans', networkController.getWLANs);
 
+// Alerts and events
+router.get('/alerts', networkController.getAlerts);
+router.get('/events', networkController.getEvents);
+
+// WAN status
+router.get('/wan-status', networkController.getWANStatus);
+
+// MAC vendor lookup
+router.get('/mac-lookup/:mac', networkController.lookupMacVendor);
+
 export default router;

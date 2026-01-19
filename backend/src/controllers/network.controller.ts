@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest, ApiResponse } from '../types';
 import omadaService from '../services/omada.service';
+import macLookupService from '../services/mac-lookup.service';
 import logger from '../config/logger';
 
 export const getDevices = async (_req: AuthRequest, res: Response) => {
@@ -175,6 +176,93 @@ export const getWLANs = async (_req: AuthRequest, res: Response) => {
     return res.status(500).json({
       success: false,
       error: 'Failed to retrieve WLANs',
+    } as ApiResponse);
+  }
+};
+
+export const getAlerts = async (req: AuthRequest, res: Response) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const pageSize = parseInt(req.query.pageSize as string) || 100;
+
+    const alerts = await omadaService.getAlerts(page, pageSize);
+
+    return res.json({
+      success: true,
+      data: alerts,
+    } as ApiResponse);
+  } catch (error) {
+    logger.error('Get alerts error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve alerts',
+    } as ApiResponse);
+  }
+};
+
+export const getEvents = async (req: AuthRequest, res: Response) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const pageSize = parseInt(req.query.pageSize as string) || 100;
+
+    const events = await omadaService.getEvents(page, pageSize);
+
+    return res.json({
+      success: true,
+      data: events,
+    } as ApiResponse);
+  } catch (error) {
+    logger.error('Get events error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve events',
+    } as ApiResponse);
+  }
+};
+
+export const getWANStatus = async (_req: AuthRequest, res: Response) => {
+  try {
+    const wanStatus = await omadaService.getWANStatus();
+
+    return res.json({
+      success: true,
+      data: wanStatus,
+    } as ApiResponse);
+  } catch (error) {
+    logger.error('Get WAN status error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve WAN status',
+    } as ApiResponse);
+  }
+};
+
+export const lookupMacVendor = async (req: AuthRequest, res: Response) => {
+  try {
+    const { mac } = req.params;
+    const macStr = Array.isArray(mac) ? mac[0] : mac;
+
+    if (!macStr) {
+      return res.status(400).json({
+        success: false,
+        error: 'MAC address required',
+      } as ApiResponse);
+    }
+
+    const vendor = await macLookupService.lookupVendor(macStr);
+
+    return res.json({
+      success: true,
+      data: {
+        mac: macStr,
+        vendor: vendor || 'Unknown',
+      },
+    } as ApiResponse);
+  } catch (error) {
+    logger.error('MAC lookup error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to lookup MAC vendor',
     } as ApiResponse);
   }
 };
