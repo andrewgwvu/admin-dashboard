@@ -79,9 +79,26 @@ export const getClients = async (_req: AuthRequest, res: Response) => {
   try {
     const clients = await omadaService.getClients();
 
+    // Enrich clients with MAC vendor lookup for those without vendor info
+    const enrichedClients = await Promise.all(
+      clients.map(async (client) => {
+        // If vendor is missing or unknown, look it up
+        if (!client.vendor || client.vendor === 'Unknown' || client.vendor.trim() === '') {
+          try {
+            const vendor = await macLookupService.lookupVendor(client.mac);
+            return { ...client, vendor: vendor || 'Unknown' };
+          } catch (error) {
+            logger.warn(`Failed to lookup vendor for MAC ${client.mac}:`, error);
+            return { ...client, vendor: 'Unknown' };
+          }
+        }
+        return client;
+      })
+    );
+
     return res.json({
       success: true,
-      data: clients,
+      data: enrichedClients,
     } as ApiResponse);
   } catch (error) {
     logger.error('Get clients error:', error);

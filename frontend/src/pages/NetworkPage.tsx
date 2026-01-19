@@ -77,7 +77,7 @@ export default function NetworkPage() {
   };
 
   const formatUptime = (seconds?: number) => {
-    if (!seconds) return 'N/A';
+    if (!seconds || isNaN(seconds) || seconds < 0) return 'N/A';
     const days = Math.floor(seconds / 86400);
     const hours = Math.floor((seconds % 86400) / 3600);
     return `${days}d ${hours}h`;
