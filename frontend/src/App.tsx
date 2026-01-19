@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { authService } from './services/auth.service';
 import { DarkModeProvider } from './contexts/DarkModeContext';
@@ -39,6 +40,11 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
+  useEffect(() => {
+    // Start checking for token expiration
+    authService.startTokenExpirationCheck();
+  }, []);
+
   return (
     <DarkModeProvider>
       <Router>

@@ -46,7 +46,50 @@ export const authService = {
   },
 
   isAuthenticated(): boolean {
-    return !!this.getToken();
+    const token = this.getToken();
+    if (!token) return false;
+
+    // Check if token is expired
+    if (this.isTokenExpired(token)) {
+      this.logout();
+      return false;
+    }
+
+    return true;
+  },
+
+  isTokenExpired(token: string): boolean {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split('')
+          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      );
+
+      const payload = JSON.parse(jsonPayload);
+      const exp = payload.exp;
+
+      if (!exp) return false;
+
+      // Check if token expired (exp is in seconds, Date.now() is in milliseconds)
+      return Date.now() >= exp * 1000;
+    } catch (error) {
+      console.error('Failed to decode token:', error);
+      return true; // If we can't decode it, consider it expired
+    }
+  },
+
+  startTokenExpirationCheck(): void {
+    // Check every minute if token is expired
+    setInterval(() => {
+      if (this.getToken() && this.isTokenExpired(this.getToken()!)) {
+        console.log('Token expired, logging out...');
+        this.logout();
+      }
+    }, 60000); // Check every 60 seconds
   },
 
   getCurrentUser() {
@@ -66,8 +109,34 @@ export const authService = {
 
   handleSSOCallback(token: string): void {
     localStorage.setItem('token', token);
-    // Fetch user info using the token
-    this.fetchUserInfo();
+
+    // Decode JWT to extract user info
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split('')
+          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      );
+
+      const payload = JSON.parse(jsonPayload);
+      const user = {
+        id: payload.id,
+        username: payload.username,
+        email: payload.email,
+        firstName: payload.firstName,
+        lastName: payload.lastName,
+        role: payload.role,
+      };
+
+      localStorage.setItem('user', JSON.stringify(user));
+    } catch (error) {
+      console.error('Failed to decode JWT:', error);
+      // Fallback to fetching user info
+      this.fetchUserInfo();
+    }
   },
 
   async fetchUserInfo(): Promise<void> {
