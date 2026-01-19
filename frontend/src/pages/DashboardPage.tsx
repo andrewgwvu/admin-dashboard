@@ -3,8 +3,8 @@ import { Users, Network, Server, Activity } from 'lucide-react';
 
 export default function DashboardPage() {
   return (
-    <div>
-      <div className="mb-8">
+    <div className="animate-fade-in">
+      <div className="mb-8 animate-slide-down">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
         <p className="mt-2 text-gray-600 dark:text-gray-400">
           Welcome to your homelab management dashboard
@@ -15,7 +15,7 @@ export default function DashboardPage() {
         {/* Account Management Card */}
         <Link
           to="/accounts"
-          className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow"
+          className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 animate-slide-up"
         >
           <div className="p-5">
             <div className="flex items-center">
@@ -39,7 +39,8 @@ export default function DashboardPage() {
         {/* Network Management Card */}
         <Link
           to="/network"
-          className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow"
+          className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 animate-slide-up"
+          style={{ animationDelay: '0.1s' }}
         >
           <div className="p-5">
             <div className="flex items-center">
@@ -61,7 +62,7 @@ export default function DashboardPage() {
         </Link>
 
         {/* Identity Sources Card */}
-        <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
+        <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 animate-slide-up" style={{ animationDelay: '0.2s' }}>
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
@@ -82,7 +83,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Status Card */}
-        <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
+        <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 animate-slide-up" style={{ animationDelay: '0.3s' }}>
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
@@ -103,7 +104,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="mt-8 bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+      <div className="mt-8 bg-white dark:bg-gray-800 shadow rounded-lg p-6 animate-fade-in" style={{ animationDelay: '0.4s' }}>
         <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Quick Actions</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Link

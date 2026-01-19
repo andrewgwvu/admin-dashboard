@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { authService } from './services/auth.service';
 import { DarkModeProvider } from './contexts/DarkModeContext';
 import LoginPage from './pages/LoginPage';
+import SSOCallbackPage from './pages/SSOCallbackPage';
 import DashboardPage from './pages/DashboardPage';
 import AccountsPage from './pages/AccountsPage';
 import AccountDetailPage from './pages/AccountDetailPage';
@@ -43,6 +44,7 @@ function App() {
       <Router>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/auth/callback" element={<SSOCallbackPage />} />
           <Route
             path="/"
             element={

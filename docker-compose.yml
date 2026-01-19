@@ -56,6 +56,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3001
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: homelab_dashboard
@@ -71,6 +72,9 @@ services:
       # Okta
       OKTA_DOMAIN: ${OKTA_DOMAIN}
       OKTA_API_TOKEN: ${OKTA_API_TOKEN}
+      OKTA_CLIENT_ID: ${OKTA_CLIENT_ID}
+      OKTA_CLIENT_SECRET: ${OKTA_CLIENT_SECRET}
+      OKTA_REDIRECT_URI: ${OKTA_REDIRECT_URI:-http://localhost:3001/auth/okta/callback}
       # Active Directory
       AD_URL: ${AD_URL}
       AD_BASE_DN: ${AD_BASE_DN}

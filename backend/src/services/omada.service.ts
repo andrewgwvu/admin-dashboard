@@ -366,6 +366,120 @@ class OmadaService {
       return [];
     }
   }
+
+  async getAlerts(page = 1, pageSize = 100): Promise<any> {
+    try {
+      const siteId = await this.resolveSiteId();
+
+      const result: any = await this.openApiRequest<any>(
+        'GET',
+        `/openapi/v2/sites/${siteId}/alerts`,
+        `/sites/${siteId}/alerts`,
+        { page, pageSize }
+      );
+
+      return {
+        data: Array.isArray(result?.data) ? result.data : Array.isArray(result) ? result : [],
+        totalRows: result?.totalRows || 0,
+        currentPage: result?.currentPage || page,
+        currentSize: result?.currentSize || pageSize,
+      };
+    } catch (e: any) {
+      logger.error(`Omada getAlerts error: ${e?.message || e}`);
+      return { data: [], totalRows: 0, currentPage: page, currentSize: pageSize };
+    }
+  }
+
+  async getEvents(page = 1, pageSize = 100): Promise<any> {
+    try {
+      const siteId = await this.resolveSiteId();
+
+      const result: any = await this.openApiRequest<any>(
+        'GET',
+        `/openapi/v2/sites/${siteId}/events`,
+        `/sites/${siteId}/events`,
+        { page, pageSize }
+      );
+
+      return {
+        data: Array.isArray(result?.data) ? result.data : Array.isArray(result) ? result : [],
+        totalRows: result?.totalRows || 0,
+        currentPage: result?.currentPage || page,
+        currentSize: result?.currentSize || pageSize,
+      };
+    } catch (e: any) {
+      logger.error(`Omada getEvents error: ${e?.message || e}`);
+      return { data: [], totalRows: 0, currentPage: page, currentSize: pageSize };
+    }
+  }
+
+  async getWANStatus(): Promise<any> {
+    try {
+      const siteId = await this.resolveSiteId();
+
+      // Try to get gateway/router devices first
+      const devices = await this.getDevices();
+      const gateways = devices.filter((d) => d.type === 'gateway' || d.type === 'router');
+
+      if (gateways.length === 0) {
+        return {
+          status: 'unknown',
+          message: 'No gateway/router devices found',
+        };
+      }
+
+      // Get detailed info about the first gateway
+      const gateway = gateways[0];
+
+      // Try to get WAN port status
+      const result: any = await this.openApiRequest<any>(
+        'GET',
+        `/openapi/v2/sites/${siteId}/gateways/${gateway.id}/wan-ports`,
+        `/sites/${siteId}/gateways/${gateway.id}/wan-ports`
+      ).catch(() => null);
+
+      if (!result) {
+        return {
+          status: gateway.status,
+          message: `Gateway ${gateway.name} is ${gateway.status}`,
+          gateway: {
+            id: gateway.id,
+            name: gateway.name,
+            ip: gateway.ip,
+            mac: gateway.mac,
+            status: gateway.status,
+          },
+        };
+      }
+
+      const wanPorts = Array.isArray(result?.data) ? result.data : Array.isArray(result) ? result : [];
+
+      return {
+        status: gateway.status,
+        gateway: {
+          id: gateway.id,
+          name: gateway.name,
+          ip: gateway.ip,
+          mac: gateway.mac,
+          status: gateway.status,
+        },
+        wanPorts: wanPorts.map((port: any) => ({
+          name: port.name || port.portName,
+          status: port.status || port.linkStatus,
+          ipAddress: port.ipAddress || port.ip,
+          gateway: port.gateway,
+          dns: port.dns,
+          uptime: port.uptime,
+        })),
+      };
+    } catch (e: any) {
+      logger.error(`Omada getWANStatus error: ${e?.message || e}`);
+      return {
+        status: 'error',
+        message: e?.message || 'Failed to get WAN status',
+      };
+    }
+  }
 }
 
 export default new OmadaService();

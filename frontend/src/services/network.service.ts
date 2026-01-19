@@ -83,4 +83,50 @@ export const networkService = {
 
     throw new Error(response.error || 'Failed to fetch WLANs');
   },
+
+  async getAlerts(page = 1, pageSize = 100): Promise<any> {
+    const response = await api.get<ApiResponse<any>>(
+      `/network/alerts?page=${page}&pageSize=${pageSize}`
+    );
+
+    if (response.success && response.data) {
+      return response.data;
+    }
+
+    throw new Error(response.error || 'Failed to fetch alerts');
+  },
+
+  async getEvents(page = 1, pageSize = 100): Promise<any> {
+    const response = await api.get<ApiResponse<any>>(
+      `/network/events?page=${page}&pageSize=${pageSize}`
+    );
+
+    if (response.success && response.data) {
+      return response.data;
+    }
+
+    throw new Error(response.error || 'Failed to fetch events');
+  },
+
+  async getWANStatus(): Promise<any> {
+    const response = await api.get<ApiResponse<any>>('/network/wan-status');
+
+    if (response.success && response.data) {
+      return response.data;
+    }
+
+    throw new Error(response.error || 'Failed to fetch WAN status');
+  },
+
+  async lookupMacVendor(mac: string): Promise<{ mac: string; vendor: string }> {
+    const response = await api.get<ApiResponse<{ mac: string; vendor: string }>>(
+      `/network/mac-lookup/${encodeURIComponent(mac)}`
+    );
+
+    if (response.success && response.data) {
+      return response.data;
+    }
+
+    throw new Error(response.error || 'Failed to lookup MAC vendor');
+  },
 };
