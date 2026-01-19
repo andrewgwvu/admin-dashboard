@@ -205,7 +205,7 @@ export const verifyToken = async (req: Request, res: Response) => {
   }
 };
 
-export const oktaSSOLogin = async (req: Request, res: Response) => {
+export const oktaSSOLogin = async (_req: Request, res: Response) => {
   try {
     const oktaDomain = process.env.OKTA_DOMAIN;
     const clientId = process.env.OKTA_CLIENT_ID;
@@ -247,7 +247,7 @@ export const oktaSSOLogin = async (req: Request, res: Response) => {
 
 export const oktaSSOCallback = async (req: Request, res: Response) => {
   try {
-    const { code, state } = req.query;
+    const { code } = req.query;
 
     if (!code) {
       return res.status(400).json({
@@ -285,7 +285,7 @@ export const oktaSSOCallback = async (req: Request, res: Response) => {
       }
     );
 
-    const { access_token, id_token } = tokenResponse.data;
+    const { access_token } = tokenResponse.data;
 
     // Get user info
     const userInfoResponse = await axios.get(
