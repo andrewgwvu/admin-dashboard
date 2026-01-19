@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Server, Wifi, Activity, RefreshCw, Power, Ban, Loader2 } from 'lucide-react';
+import { Server, Wifi, Activity, RefreshCw, Power, Ban, Loader2, Cable } from 'lucide-react';
 import { networkService } from '../services/network.service';
 import { NetworkDevice, NetworkClient } from '../types';
 
@@ -256,7 +256,11 @@ export default function NetworkPage() {
                         <tr key={client.id}>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
-                              <Wifi className="h-5 w-5 text-gray-400 dark:text-gray-500 mr-3" />
+                              {client.wireless ? (
+                                <Wifi className="h-5 w-5 text-gray-400 dark:text-gray-500 mr-3" />
+                              ) : (
+                                <Cable className="h-5 w-5 text-gray-400 dark:text-gray-500 mr-3" />
+                              )}
                               <div>
                                 <div className="text-sm font-medium text-gray-900 dark:text-white">
                                   {client.name || client.hostname || 'Unknown'}
