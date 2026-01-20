@@ -1,21 +1,59 @@
 import { useEffect, useState } from 'react';
-import { Server, Wifi, Activity, RefreshCw, Power, Ban, Loader2, Cable, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Server, Wifi, Activity, RefreshCw, Power, Ban, Loader2, Cable, ArrowUpDown, ArrowUp, ArrowDown, AlertTriangle, Globe, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { networkService } from '../services/network.service';
 import { NetworkDevice, NetworkClient } from '../types';
 
-type Tab = 'devices' | 'clients';
+type Tab = 'devices' | 'clients' | 'wan' | 'alerts';
 type SortField = 'name' | 'ip' | 'connection' | 'status';
 type SortDirection = 'asc' | 'desc';
+
+interface WANStatus {
+  status: string;
+  message?: string;
+  gateway?: {
+    id: string;
+    name: string;
+    ip: string;
+    mac: string;
+    status: string;
+  };
+  wanPorts?: {
+    name: string;
+    status: string;
+    ipAddress: string;
+    gateway: string;
+    dns: string;
+    uptime: number;
+  }[];
+}
+
+interface AlertsData {
+  data: any[];
+  totalRows: number;
+  currentPage: number;
+  currentSize: number;
+}
+
+interface EventsData {
+  data: any[];
+  totalRows: number;
+  currentPage: number;
+  currentSize: number;
+}
 
 export default function NetworkPage() {
   const [activeTab, setActiveTab] = useState<Tab>('devices');
   const [devices, setDevices] = useState<NetworkDevice[]>([]);
   const [clients, setClients] = useState<NetworkClient[]>([]);
+  const [wanStatus, setWanStatus] = useState<WANStatus | null>(null);
+  const [alerts, setAlerts] = useState<AlertsData>({ data: [], totalRows: 0, currentPage: 1, currentSize: 100 });
+  const [events, setEvents] = useState<EventsData>({ data: [], totalRows: 0, currentPage: 1, currentSize: 100 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [alertsEventsTab, setAlertsEventsTab] = useState<'alerts' | 'events'>('alerts');
 
   useEffect(() => {
     loadData();
@@ -29,9 +67,17 @@ export default function NetworkPage() {
       if (activeTab === 'devices') {
         const data = await networkService.getDevices();
         setDevices(data);
-      } else {
+      } else if (activeTab === 'clients') {
         const data = await networkService.getClients();
         setClients(data);
+      } else if (activeTab === 'wan') {
+        const data = await networkService.getWANStatus();
+        setWanStatus(data);
+      } else if (activeTab === 'alerts') {
+        const alertsData = await networkService.getAlerts(1, 100);
+        const eventsData = await networkService.getEvents(1, 100);
+        setAlerts(alertsData);
+        setEvents(eventsData);
       }
     } catch (err: any) {
       setError(err.message || 'Failed to load data');
@@ -152,10 +198,10 @@ export default function NetworkPage() {
 
       {/* Tabs */}
       <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
-        <nav className="-mb-px flex space-x-8">
+        <nav className="-mb-px flex space-x-8 overflow-x-auto">
           <button
             onClick={() => setActiveTab('devices')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+            className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
               activeTab === 'devices'
                 ? 'border-blue-500 text-blue-600 dark:border-blue-400 dark:text-blue-400'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:border-gray-600'
@@ -166,7 +212,7 @@ export default function NetworkPage() {
           </button>
           <button
             onClick={() => setActiveTab('clients')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+            className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
               activeTab === 'clients'
                 ? 'border-blue-500 text-blue-600 dark:border-blue-400 dark:text-blue-400'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:border-gray-600'
@@ -174,6 +220,28 @@ export default function NetworkPage() {
           >
             <Wifi className="inline-block w-5 h-5 mr-2" />
             Clients
+          </button>
+          <button
+            onClick={() => setActiveTab('wan')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+              activeTab === 'wan'
+                ? 'border-blue-500 text-blue-600 dark:border-blue-400 dark:text-blue-400'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:border-gray-600'
+            }`}
+          >
+            <Globe className="inline-block w-5 h-5 mr-2" />
+            WAN Status
+          </button>
+          <button
+            onClick={() => setActiveTab('alerts')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+              activeTab === 'alerts'
+                ? 'border-blue-500 text-blue-600 dark:border-blue-400 dark:text-blue-400'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:border-gray-600'
+            }`}
+          >
+            <AlertTriangle className="inline-block w-5 h-5 mr-2" />
+            Alerts & Events
           </button>
         </nav>
       </div>
@@ -393,6 +461,257 @@ export default function NetworkPage() {
                   No clients found
                 </div>
               )}
+            </div>
+          )}
+
+          {/* WAN Status Tab */}
+          {activeTab === 'wan' && wanStatus && (
+            <div className="space-y-6">
+              {/* Gateway Status Card */}
+              {wanStatus.gateway && (
+                <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
+                      <Server className="h-6 w-6 mr-2" />
+                      Gateway
+                    </h2>
+                    <span
+                      className={`px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full ${
+                        wanStatus.gateway.status === 'online'
+                          ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                          : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                      }`}
+                    >
+                      {wanStatus.gateway.status === 'online' ? (
+                        <CheckCircle className="h-4 w-4 mr-1 inline" />
+                      ) : (
+                        <XCircle className="h-4 w-4 mr-1 inline" />
+                      )}
+                      {wanStatus.gateway.status}
+                    </span>
+                  </div>
+                  <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Name</dt>
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-white">{wanStatus.gateway.name}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">IP Address</dt>
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-white">{wanStatus.gateway.ip}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">MAC Address</dt>
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-white">{wanStatus.gateway.mac}</dd>
+                    </div>
+                  </dl>
+                </div>
+              )}
+
+              {/* WAN Ports */}
+              {wanStatus.wanPorts && wanStatus.wanPorts.length > 0 && (
+                <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
+                  <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
+                      <Globe className="h-6 w-6 mr-2" />
+                      WAN Ports
+                    </h2>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                      <thead className="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Port Name
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Status
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            IP Address
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Gateway
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            DNS
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Uptime
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        {wanStatus.wanPorts.map((port, index) => (
+                          <tr key={index}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                              {port.name || 'N/A'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span
+                                className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                  port.status === 'connected' || port.status === 'online'
+                                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                                    : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                                }`}
+                              >
+                                {port.status || 'unknown'}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                              {port.ipAddress || 'N/A'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                              {port.gateway || 'N/A'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                              {port.dns || 'N/A'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                              {formatUptime(port.uptime)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Message if no detailed WAN info */}
+              {wanStatus.message && !wanStatus.gateway && (
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                  <p className="text-sm text-yellow-800 dark:text-yellow-400">{wanStatus.message}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Alerts & Events Tab */}
+          {activeTab === 'alerts' && (
+            <div className="space-y-6">
+              {/* Sub-tabs for Alerts/Events */}
+              <div className="bg-white dark:bg-gray-800 shadow rounded-lg">
+                <div className="border-b border-gray-200 dark:border-gray-700">
+                  <nav className="-mb-px flex space-x-8 px-6">
+                    <button
+                      onClick={() => setAlertsEventsTab('alerts')}
+                      className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                        alertsEventsTab === 'alerts'
+                          ? 'border-blue-500 text-blue-600 dark:border-blue-400 dark:text-blue-400'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:border-gray-600'
+                      }`}
+                    >
+                      <AlertTriangle className="inline-block w-5 h-5 mr-2" />
+                      Alerts ({alerts.totalRows})
+                    </button>
+                    <button
+                      onClick={() => setAlertsEventsTab('events')}
+                      className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                        alertsEventsTab === 'events'
+                          ? 'border-blue-500 text-blue-600 dark:border-blue-400 dark:text-blue-400'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:border-gray-600'
+                      }`}
+                    >
+                      <Clock className="inline-block w-5 h-5 mr-2" />
+                      Events ({events.totalRows})
+                    </button>
+                  </nav>
+                </div>
+
+                {/* Alerts List */}
+                {alertsEventsTab === 'alerts' && (
+                  <div>
+                    {alerts.data.length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                          <thead className="bg-gray-50 dark:bg-gray-700">
+                            <tr>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                Type
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                Message
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                Time
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            {alerts.data.map((alert, index) => (
+                              <tr key={index}>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+                                    {alert.type || alert.alertType || 'Alert'}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                                  {alert.message || alert.description || 'No description'}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                  {alert.time ? new Date(alert.time).toLocaleString() : 'N/A'}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                        <CheckCircle className="mx-auto h-12 w-12 text-green-400 dark:text-green-500" />
+                        <p className="mt-2">No active alerts</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Events List */}
+                {alertsEventsTab === 'events' && (
+                  <div>
+                    {events.data.length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                          <thead className="bg-gray-50 dark:bg-gray-700">
+                            <tr>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                Type
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                Message
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                Time
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            {events.data.map((event, index) => (
+                              <tr key={index}>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                                    {event.type || event.eventType || 'Event'}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                                  {event.message || event.description || 'No description'}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                  {event.time ? new Date(event.time).toLocaleString() : 'N/A'}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                        <Clock className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
+                        <p className="mt-2">No recent events</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </>
