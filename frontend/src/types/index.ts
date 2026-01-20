@@ -75,6 +75,122 @@ export interface NetworkClient {
   signalStrength?: number;
   deviceType?: string;
   lastSeen: string;
+  vlan?: number;
+  parentDeviceMac?: string;
+  parentDeviceName?: string;
+  port?: string;
+  uplinkDevice?: string;
+  rateLimit?: {
+    download?: number;
+    upload?: number;
+  };
+}
+
+export interface SwitchPort {
+  port: number;
+  name: string;
+  enabled: boolean;
+  linkStatus: 'up' | 'down';
+  speed: string;
+  duplex: string;
+  poe?: {
+    enabled: boolean;
+    power: number;
+    mode: string;
+  };
+  vlan?: number;
+  profile?: string;
+  connectedDevice?: {
+    mac: string;
+    name: string;
+    type: string;
+  };
+}
+
+export interface APRadio {
+  radioId: string;
+  band: '2.4GHz' | '5GHz' | '6GHz';
+  channel: number;
+  channelWidth: string;
+  txPower: number;
+  mode: string;
+  enabled: boolean;
+}
+
+export interface FirmwareInfo {
+  deviceId: string;
+  currentVersion: string;
+  latestVersion?: string;
+  updateAvailable: boolean;
+  releaseNotes?: string;
+  lastChecked?: string;
+}
+
+export interface NetworkTopology {
+  devices: Array<{
+    id: string;
+    name: string;
+    type: string;
+    mac: string;
+    ip: string;
+    status: string;
+    children: string[];
+  }>;
+  connections: Array<{
+    from: string;
+    to: string;
+    port?: string;
+    type: 'wired' | 'wireless';
+  }>;
+  clients: Array<{
+    mac: string;
+    name?: string;
+    ip: string;
+    type: string;
+  }>;
+}
+
+export interface TrafficStats {
+  current: {
+    download: number;
+    upload: number;
+    total: number;
+  };
+  historical: Array<{
+    timestamp: string;
+    download: number;
+    upload: number;
+  }>;
+  topClients?: Array<{
+    mac: string;
+    name?: string;
+    download: number;
+    upload: number;
+    total: number;
+  }>;
+}
+
+export interface WLAN {
+  id: string;
+  name: string;
+  ssid: string;
+  enabled: boolean;
+  security: string;
+  vlan?: number;
+  guestNetwork: boolean;
+  hideSsid: boolean;
+  bandSteering: boolean;
+  clients: number;
+}
+
+export interface SystemLog {
+  id: string;
+  timestamp: string;
+  level: 'info' | 'warning' | 'error' | 'critical';
+  category: string;
+  device?: string;
+  message: string;
+  details?: any;
 }
 
 export interface SearchResult {

@@ -295,6 +295,10 @@ class OmadaService {
       signalStrength: c.signalLevel ?? c.rssi,
       deviceType: c.deviceType,
       lastSeen: c.lastSeen ? new Date(Number(c.lastSeen) * 1000) : new Date(),
+      vlan: c.vid || c.vlan,
+      parentDeviceMac: c.apMac || c.switchMac || c.gatewayMac || c.uplinkDeviceMac,
+      port: c.port,
+      uplinkDevice: c.connectDevType,
     }));
   }
 
@@ -478,6 +482,414 @@ class OmadaService {
         status: 'error',
         message: e?.message || 'Failed to get WAN status',
       };
+    }
+  }
+
+  // ========== Firmware Management ==========
+  async getFirmwareInfo(deviceId: string): Promise<any> {
+    try {
+      const siteId = await this.resolveSiteId();
+
+      const result: any = await this.openApiRequest<any>(
+        'GET',
+        `/openapi/v2/sites/${siteId}/devices/${deviceId}/firmware`,
+        `/sites/${siteId}/devices/${deviceId}/firmware`
+      );
+
+      return {
+        deviceId,
+        currentVersion: result?.currentVersion || result?.fwVersion,
+        latestVersion: result?.latestVersion || result?.newVersion,
+        updateAvailable: Boolean(result?.updateAvailable || result?.needUpgrade),
+        releaseNotes: result?.releaseNotes || result?.description,
+        lastChecked: new Date(),
+      };
+    } catch (e: any) {
+      logger.error(`Omada getFirmwareInfo error: ${e?.message || e}`);
+      return null;
+    }
+  }
+
+  async upgradeFirmware(deviceId: string): Promise<boolean> {
+    try {
+      const siteId = await this.resolveSiteId();
+
+      await this.openApiRequest<any>(
+        'POST',
+        `/openapi/v2/sites/${siteId}/devices/${deviceId}/firmware/upgrade`,
+        `/sites/${siteId}/devices/${deviceId}/firmware/upgrade`
+      );
+
+      logger.info(`Firmware upgrade initiated for device ${deviceId}`);
+      return true;
+    } catch (e: any) {
+      logger.error(`Omada upgradeFirmware error: ${e?.message || e}`);
+      return false;
+    }
+  }
+
+  // ========== Switch Port Management ==========
+  async getSwitchPorts(switchId: string): Promise<any[]> {
+    try {
+      const siteId = await this.resolveSiteId();
+
+      const result: any = await this.openApiRequest<any>(
+        'GET',
+        `/openapi/v2/sites/${siteId}/switches/${switchId}/ports`,
+        `/sites/${siteId}/switches/${switchId}/ports`
+      );
+
+      const rows = Array.isArray(result?.data) ? result.data : Array.isArray(result) ? result : [];
+      return rows.map((port: any) => ({
+        port: port.port || port.portId || port.id,
+        name: port.name || port.portName || `Port ${port.port}`,
+        enabled: Boolean(port.enable ?? port.enabled ?? true),
+        linkStatus: port.linkStatus === 'link-up' || port.linkStatus === 1 ? 'up' : 'down',
+        speed: port.speed || port.linkSpeed,
+        duplex: port.duplex || 'auto',
+        poe: port.poe ? {
+          enabled: Boolean(port.poe.enable),
+          power: port.poe.power || 0,
+          mode: port.poe.mode || 'auto',
+        } : undefined,
+        vlan: port.vlan || port.pvid,
+        profile: port.profile || port.profileName,
+        connectedDevice: port.client ? {
+          mac: port.client.mac,
+          name: port.client.name,
+          type: port.client.type,
+        } : undefined,
+      }));
+    } catch (e: any) {
+      logger.error(`Omada getSwitchPorts error: ${e?.message || e}`);
+      return [];
+    }
+  }
+
+  async updateSwitchPort(switchId: string, portId: string | number, config: any): Promise<boolean> {
+    try {
+      const siteId = await this.resolveSiteId();
+
+      await this.openApiRequest<any>(
+        'POST',
+        `/openapi/v2/sites/${siteId}/switches/${switchId}/ports/${portId}`,
+        `/sites/${siteId}/switches/${switchId}/ports/${portId}`,
+        {},
+        config
+      );
+
+      logger.info(`Updated switch ${switchId} port ${portId}`);
+      return true;
+    } catch (e: any) {
+      logger.error(`Omada updateSwitchPort error: ${e?.message || e}`);
+      return false;
+    }
+  }
+
+  async toggleSwitchPortPoe(switchId: string, portId: string | number, enabled: boolean): Promise<boolean> {
+    try {
+      return await this.updateSwitchPort(switchId, portId, { poe: { enable: enabled } });
+    } catch (e: any) {
+      logger.error(`Omada toggleSwitchPortPoe error: ${e?.message || e}`);
+      return false;
+    }
+  }
+
+  // ========== AP Radio Management ==========
+  async getAPRadios(apId: string): Promise<any[]> {
+    try {
+      const siteId = await this.resolveSiteId();
+
+      const result: any = await this.openApiRequest<any>(
+        'GET',
+        `/openapi/v2/sites/${siteId}/aps/${apId}/radios`,
+        `/sites/${siteId}/aps/${apId}/radios`
+      );
+
+      const rows = Array.isArray(result?.data) ? result.data : Array.isArray(result) ? result : [];
+      return rows.map((radio: any) => ({
+        radioId: radio.radioId || radio.id,
+        band: radio.band || radio.radioName,
+        channel: radio.channel,
+        channelWidth: radio.channelWidth || radio.bandwidth,
+        txPower: radio.txPower || radio.power,
+        mode: radio.mode || radio.radioMode,
+        enabled: Boolean(radio.enable ?? radio.enabled ?? true),
+      }));
+    } catch (e: any) {
+      logger.error(`Omada getAPRadios error: ${e?.message || e}`);
+      return [];
+    }
+  }
+
+  async updateAPRadio(apId: string, radioId: string, config: any): Promise<boolean> {
+    try {
+      const siteId = await this.resolveSiteId();
+
+      await this.openApiRequest<any>(
+        'POST',
+        `/openapi/v2/sites/${siteId}/aps/${apId}/radios/${radioId}`,
+        `/sites/${siteId}/aps/${apId}/radios/${radioId}`,
+        {},
+        config
+      );
+
+      logger.info(`Updated AP ${apId} radio ${radioId}`);
+      return true;
+    } catch (e: any) {
+      logger.error(`Omada updateAPRadio error: ${e?.message || e}`);
+      return false;
+    }
+  }
+
+  // ========== WLAN Management ==========
+  async updateWLAN(wlanId: string, config: any): Promise<boolean> {
+    try {
+      const siteId = await this.resolveSiteId();
+
+      await this.openApiRequest<any>(
+        'POST',
+        `/openapi/v2/sites/${siteId}/wireless-network/wlans/${wlanId}`,
+        `/sites/${siteId}/wireless-network/wlans/${wlanId}`,
+        {},
+        config
+      );
+
+      logger.info(`Updated WLAN ${wlanId}`);
+      return true;
+    } catch (e: any) {
+      logger.error(`Omada updateWLAN error: ${e?.message || e}`);
+      return false;
+    }
+  }
+
+  async toggleWLAN(wlanId: string, enabled: boolean): Promise<boolean> {
+    try {
+      return await this.updateWLAN(wlanId, { enable: enabled });
+    } catch (e: any) {
+      logger.error(`Omada toggleWLAN error: ${e?.message || e}`);
+      return false;
+    }
+  }
+
+  // ========== WAN Connection Control ==========
+  async connectWAN(gatewayId: string, wanId: string): Promise<boolean> {
+    try {
+      const siteId = await this.resolveSiteId();
+
+      await this.openApiRequest<any>(
+        'POST',
+        `/openapi/v2/sites/${siteId}/gateways/${gatewayId}/wan/${wanId}/connect`,
+        `/sites/${siteId}/gateways/${gatewayId}/wan/${wanId}/connect`
+      );
+
+      logger.info(`Connected WAN ${wanId} on gateway ${gatewayId}`);
+      return true;
+    } catch (e: any) {
+      logger.error(`Omada connectWAN error: ${e?.message || e}`);
+      return false;
+    }
+  }
+
+  async disconnectWAN(gatewayId: string, wanId: string): Promise<boolean> {
+    try {
+      const siteId = await this.resolveSiteId();
+
+      await this.openApiRequest<any>(
+        'POST',
+        `/openapi/v2/sites/${siteId}/gateways/${gatewayId}/wan/${wanId}/disconnect`,
+        `/sites/${siteId}/gateways/${gatewayId}/wan/${wanId}/disconnect`
+      );
+
+      logger.info(`Disconnected WAN ${wanId} on gateway ${gatewayId}`);
+      return true;
+    } catch (e: any) {
+      logger.error(`Omada disconnectWAN error: ${e?.message || e}`);
+      return false;
+    }
+  }
+
+  // ========== Client Rate Limiting ==========
+  async setClientRateLimit(clientMac: string, downloadLimit: number, uploadLimit: number): Promise<boolean> {
+    try {
+      const siteId = await this.resolveSiteId();
+
+      await this.openApiRequest<any>(
+        'POST',
+        `/openapi/v2/sites/${siteId}/clients/${clientMac}/rate-limit`,
+        `/sites/${siteId}/clients/${clientMac}/rate-limit`,
+        {},
+        {
+          download: downloadLimit,
+          upload: uploadLimit,
+        }
+      );
+
+      logger.info(`Set rate limit for client ${clientMac}`);
+      return true;
+    } catch (e: any) {
+      logger.error(`Omada setClientRateLimit error: ${e?.message || e}`);
+      return false;
+    }
+  }
+
+  // ========== Bandwidth & Traffic Statistics ==========
+  async getTrafficStats(): Promise<any> {
+    try {
+      const siteId = await this.resolveSiteId();
+
+      const result: any = await this.openApiRequest<any>(
+        'GET',
+        `/openapi/v2/sites/${siteId}/statistics/traffic`,
+        `/sites/${siteId}/statistics/traffic`,
+        { period: '1h' }
+      );
+
+      return {
+        current: {
+          download: result?.current?.rx || 0,
+          upload: result?.current?.tx || 0,
+          total: (result?.current?.rx || 0) + (result?.current?.tx || 0),
+        },
+        historical: Array.isArray(result?.historical) ? result.historical.map((h: any) => ({
+          timestamp: new Date(h.time * 1000),
+          download: h.rx || 0,
+          upload: h.tx || 0,
+        })) : [],
+      };
+    } catch (e: any) {
+      logger.error(`Omada getTrafficStats error: ${e?.message || e}`);
+      return { current: { download: 0, upload: 0, total: 0 }, historical: [] };
+    }
+  }
+
+  async getClientTraffic(clientMac: string): Promise<any> {
+    try {
+      const siteId = await this.resolveSiteId();
+
+      const result: any = await this.openApiRequest<any>(
+        'GET',
+        `/openapi/v2/sites/${siteId}/clients/${clientMac}/traffic`,
+        `/sites/${siteId}/clients/${clientMac}/traffic`
+      );
+
+      return {
+        download: result?.rx || result?.download || 0,
+        upload: result?.tx || result?.upload || 0,
+        total: (result?.rx || result?.download || 0) + (result?.tx || result?.upload || 0),
+      };
+    } catch (e: any) {
+      logger.error(`Omada getClientTraffic error: ${e?.message || e}`);
+      return { download: 0, upload: 0, total: 0 };
+    }
+  }
+
+  async getTopClients(limit = 10): Promise<any[]> {
+    try {
+      const siteId = await this.resolveSiteId();
+
+      const result: any = await this.openApiRequest<any>(
+        'GET',
+        `/openapi/v2/sites/${siteId}/statistics/top-clients`,
+        `/sites/${siteId}/statistics/top-clients`,
+        { limit }
+      );
+
+      const rows = Array.isArray(result?.data) ? result.data : Array.isArray(result) ? result : [];
+      return rows.map((c: any) => ({
+        mac: c.mac,
+        name: c.name,
+        download: c.rx || c.download || 0,
+        upload: c.tx || c.upload || 0,
+        total: (c.rx || c.download || 0) + (c.tx || c.upload || 0),
+      }));
+    } catch (e: any) {
+      logger.error(`Omada getTopClients error: ${e?.message || e}`);
+      return [];
+    }
+  }
+
+  // ========== Network Topology ==========
+  async getNetworkTopology(): Promise<any> {
+    try {
+      const devices = await this.getDevices();
+      const clients = await this.getClients();
+
+      // Build device hierarchy
+      const deviceMap = new Map(devices.map(d => [d.mac, d]));
+      const connections: any[] = [];
+      const deviceNodes = devices.map(d => ({
+        id: d.mac,
+        name: d.name,
+        type: d.type,
+        mac: d.mac,
+        ip: d.ip,
+        status: d.status,
+        children: [] as string[],
+      }));
+
+      // Find connections from clients to devices
+      clients.forEach(client => {
+        if (client.parentDeviceMac) {
+          connections.push({
+            from: client.parentDeviceMac,
+            to: client.mac,
+            port: client.port,
+            type: client.wireless ? 'wireless' : 'wired',
+          });
+
+          const parentDevice = deviceNodes.find(d => d.mac === client.parentDeviceMac);
+          if (parentDevice) {
+            parentDevice.children.push(client.mac);
+          }
+        }
+      });
+
+      return {
+        devices: deviceNodes,
+        connections,
+        clients: clients.map(c => ({
+          mac: c.mac,
+          name: c.name,
+          ip: c.ip,
+          type: c.wireless ? 'wireless' : 'wired',
+        })),
+      };
+    } catch (e: any) {
+      logger.error(`Omada getNetworkTopology error: ${e?.message || e}`);
+      return { devices: [], connections: [], clients: [] };
+    }
+  }
+
+  // ========== System Logs ==========
+  async getSystemLogs(page = 1, pageSize = 100): Promise<any> {
+    try {
+      const siteId = await this.resolveSiteId();
+
+      const result: any = await this.openApiRequest<any>(
+        'GET',
+        `/openapi/v2/sites/${siteId}/logs`,
+        `/sites/${siteId}/logs`,
+        { page, pageSize }
+      );
+
+      return {
+        data: Array.isArray(result?.data) ? result.data.map((log: any) => ({
+          id: log.id || log._id,
+          timestamp: log.time ? new Date(log.time * 1000) : new Date(),
+          level: log.level || log.logLevel || 'info',
+          category: log.category || log.module || 'system',
+          device: log.device || log.deviceName,
+          message: log.message || log.msg || log.description,
+          details: log.details,
+        })) : [],
+        totalRows: result?.totalRows || 0,
+        currentPage: result?.currentPage || page,
+        currentSize: result?.currentSize || pageSize,
+      };
+    } catch (e: any) {
+      logger.error(`Omada getSystemLogs error: ${e?.message || e}`);
+      return { data: [], totalRows: 0, currentPage: page, currentSize: pageSize };
     }
   }
 }

@@ -283,3 +283,415 @@ export const lookupMacVendor = async (req: AuthRequest, res: Response) => {
     } as ApiResponse);
   }
 };
+
+// ========== Firmware Management ==========
+export const getFirmwareInfo = async (req: AuthRequest, res: Response) => {
+  try {
+    const { deviceId } = req.params;
+    const deviceIdStr = Array.isArray(deviceId) ? deviceId[0] : deviceId;
+
+    const info = await omadaService.getFirmwareInfo(deviceIdStr);
+
+    return res.json({
+      success: true,
+      data: info,
+    } as ApiResponse);
+  } catch (error) {
+    logger.error('Get firmware info error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve firmware info',
+    } as ApiResponse);
+  }
+};
+
+export const upgradeFirmware = async (req: AuthRequest, res: Response) => {
+  try {
+    const { deviceId } = req.params;
+    const deviceIdStr = Array.isArray(deviceId) ? deviceId[0] : deviceId;
+
+    const success = await omadaService.upgradeFirmware(deviceIdStr);
+
+    if (!success) {
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to upgrade firmware',
+      } as ApiResponse);
+    }
+
+    return res.json({
+      success: true,
+      message: 'Firmware upgrade initiated',
+    } as ApiResponse);
+  } catch (error) {
+    logger.error('Upgrade firmware error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to upgrade firmware',
+    } as ApiResponse);
+  }
+};
+
+// ========== Switch Port Management ==========
+export const getSwitchPorts = async (req: AuthRequest, res: Response) => {
+  try {
+    const { switchId } = req.params;
+    const switchIdStr = Array.isArray(switchId) ? switchId[0] : switchId;
+
+    const ports = await omadaService.getSwitchPorts(switchIdStr);
+
+    return res.json({
+      success: true,
+      data: ports,
+    } as ApiResponse);
+  } catch (error) {
+    logger.error('Get switch ports error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve switch ports',
+    } as ApiResponse);
+  }
+};
+
+export const updateSwitchPort = async (req: AuthRequest, res: Response) => {
+  try {
+    const { switchId, portId } = req.params;
+    const switchIdStr = Array.isArray(switchId) ? switchId[0] : switchId;
+    const portIdStr = Array.isArray(portId) ? portId[0] : portId;
+
+    const success = await omadaService.updateSwitchPort(switchIdStr, portIdStr, req.body);
+
+    if (!success) {
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to update switch port',
+      } as ApiResponse);
+    }
+
+    return res.json({
+      success: true,
+      message: 'Switch port updated successfully',
+    } as ApiResponse);
+  } catch (error) {
+    logger.error('Update switch port error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to update switch port',
+    } as ApiResponse);
+  }
+};
+
+export const toggleSwitchPortPoe = async (req: AuthRequest, res: Response) => {
+  try {
+    const { switchId, portId } = req.params;
+    const { enabled } = req.body;
+    const switchIdStr = Array.isArray(switchId) ? switchId[0] : switchId;
+    const portIdStr = Array.isArray(portId) ? portId[0] : portId;
+
+    const success = await omadaService.toggleSwitchPortPoe(switchIdStr, portIdStr, enabled);
+
+    if (!success) {
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to toggle PoE',
+      } as ApiResponse);
+    }
+
+    return res.json({
+      success: true,
+      message: `PoE ${enabled ? 'enabled' : 'disabled'} successfully`,
+    } as ApiResponse);
+  } catch (error) {
+    logger.error('Toggle PoE error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to toggle PoE',
+    } as ApiResponse);
+  }
+};
+
+// ========== AP Radio Management ==========
+export const getAPRadios = async (req: AuthRequest, res: Response) => {
+  try {
+    const { apId } = req.params;
+    const apIdStr = Array.isArray(apId) ? apId[0] : apId;
+
+    const radios = await omadaService.getAPRadios(apIdStr);
+
+    return res.json({
+      success: true,
+      data: radios,
+    } as ApiResponse);
+  } catch (error) {
+    logger.error('Get AP radios error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve AP radios',
+    } as ApiResponse);
+  }
+};
+
+export const updateAPRadio = async (req: AuthRequest, res: Response) => {
+  try {
+    const { apId, radioId } = req.params;
+    const apIdStr = Array.isArray(apId) ? apId[0] : apId;
+    const radioIdStr = Array.isArray(radioId) ? radioId[0] : radioId;
+
+    const success = await omadaService.updateAPRadio(apIdStr, radioIdStr, req.body);
+
+    if (!success) {
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to update AP radio',
+      } as ApiResponse);
+    }
+
+    return res.json({
+      success: true,
+      message: 'AP radio updated successfully',
+    } as ApiResponse);
+  } catch (error) {
+    logger.error('Update AP radio error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to update AP radio',
+    } as ApiResponse);
+  }
+};
+
+// ========== WLAN Management ==========
+export const updateWLAN = async (req: AuthRequest, res: Response) => {
+  try {
+    const { wlanId } = req.params;
+    const wlanIdStr = Array.isArray(wlanId) ? wlanId[0] : wlanId;
+
+    const success = await omadaService.updateWLAN(wlanIdStr, req.body);
+
+    if (!success) {
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to update WLAN',
+      } as ApiResponse);
+    }
+
+    return res.json({
+      success: true,
+      message: 'WLAN updated successfully',
+    } as ApiResponse);
+  } catch (error) {
+    logger.error('Update WLAN error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to update WLAN',
+    } as ApiResponse);
+  }
+};
+
+export const toggleWLAN = async (req: AuthRequest, res: Response) => {
+  try {
+    const { wlanId } = req.params;
+    const { enabled } = req.body;
+    const wlanIdStr = Array.isArray(wlanId) ? wlanId[0] : wlanId;
+
+    const success = await omadaService.toggleWLAN(wlanIdStr, enabled);
+
+    if (!success) {
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to toggle WLAN',
+      } as ApiResponse);
+    }
+
+    return res.json({
+      success: true,
+      message: `WLAN ${enabled ? 'enabled' : 'disabled'} successfully`,
+    } as ApiResponse);
+  } catch (error) {
+    logger.error('Toggle WLAN error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to toggle WLAN',
+    } as ApiResponse);
+  }
+};
+
+// ========== WAN Connection Control ==========
+export const connectWAN = async (req: AuthRequest, res: Response) => {
+  try {
+    const { gatewayId, wanId } = req.params;
+    const gatewayIdStr = Array.isArray(gatewayId) ? gatewayId[0] : gatewayId;
+    const wanIdStr = Array.isArray(wanId) ? wanId[0] : wanId;
+
+    const success = await omadaService.connectWAN(gatewayIdStr, wanIdStr);
+
+    if (!success) {
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to connect WAN',
+      } as ApiResponse);
+    }
+
+    return res.json({
+      success: true,
+      message: 'WAN connected successfully',
+    } as ApiResponse);
+  } catch (error) {
+    logger.error('Connect WAN error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to connect WAN',
+    } as ApiResponse);
+  }
+};
+
+export const disconnectWAN = async (req: AuthRequest, res: Response) => {
+  try {
+    const { gatewayId, wanId } = req.params;
+    const gatewayIdStr = Array.isArray(gatewayId) ? gatewayId[0] : gatewayId;
+    const wanIdStr = Array.isArray(wanId) ? wanId[0] : wanId;
+
+    const success = await omadaService.disconnectWAN(gatewayIdStr, wanIdStr);
+
+    if (!success) {
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to disconnect WAN',
+      } as ApiResponse);
+    }
+
+    return res.json({
+      success: true,
+      message: 'WAN disconnected successfully',
+    } as ApiResponse);
+  } catch (error) {
+    logger.error('Disconnect WAN error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to disconnect WAN',
+    } as ApiResponse);
+  }
+};
+
+// ========== Client Rate Limiting ==========
+export const setClientRateLimit = async (req: AuthRequest, res: Response) => {
+  try {
+    const { clientMac } = req.params;
+    const { download, upload } = req.body;
+    const clientMacStr = Array.isArray(clientMac) ? clientMac[0] : clientMac;
+
+    const success = await omadaService.setClientRateLimit(clientMacStr, download, upload);
+
+    if (!success) {
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to set rate limit',
+      } as ApiResponse);
+    }
+
+    return res.json({
+      success: true,
+      message: 'Rate limit set successfully',
+    } as ApiResponse);
+  } catch (error) {
+    logger.error('Set rate limit error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to set rate limit',
+    } as ApiResponse);
+  }
+};
+
+// ========== Traffic & Bandwidth Statistics ==========
+export const getTrafficStats = async (_req: AuthRequest, res: Response) => {
+  try {
+    const stats = await omadaService.getTrafficStats();
+
+    return res.json({
+      success: true,
+      data: stats,
+    } as ApiResponse);
+  } catch (error) {
+    logger.error('Get traffic stats error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve traffic statistics',
+    } as ApiResponse);
+  }
+};
+
+export const getClientTraffic = async (req: AuthRequest, res: Response) => {
+  try {
+    const { clientMac } = req.params;
+    const clientMacStr = Array.isArray(clientMac) ? clientMac[0] : clientMac;
+
+    const traffic = await omadaService.getClientTraffic(clientMacStr);
+
+    return res.json({
+      success: true,
+      data: traffic,
+    } as ApiResponse);
+  } catch (error) {
+    logger.error('Get client traffic error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve client traffic',
+    } as ApiResponse);
+  }
+};
+
+export const getTopClients = async (req: AuthRequest, res: Response) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 10;
+    const topClients = await omadaService.getTopClients(limit);
+
+    return res.json({
+      success: true,
+      data: topClients,
+    } as ApiResponse);
+  } catch (error) {
+    logger.error('Get top clients error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve top clients',
+    } as ApiResponse);
+  }
+};
+
+// ========== Network Topology ==========
+export const getNetworkTopology = async (_req: AuthRequest, res: Response) => {
+  try {
+    const topology = await omadaService.getNetworkTopology();
+
+    return res.json({
+      success: true,
+      data: topology,
+    } as ApiResponse);
+  } catch (error) {
+    logger.error('Get network topology error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve network topology',
+    } as ApiResponse);
+  }
+};
+
+// ========== System Logs ==========
+export const getSystemLogs = async (req: AuthRequest, res: Response) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const pageSize = parseInt(req.query.pageSize as string) || 100;
+
+    const logs = await omadaService.getSystemLogs(page, pageSize);
+
+    return res.json({
+      success: true,
+      data: logs,
+    } as ApiResponse);
+  } catch (error) {
+    logger.error('Get system logs error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve system logs',
+    } as ApiResponse);
+  }
+};
