@@ -5,6 +5,7 @@ import axios from 'axios';
 import { ApiResponse } from '../types';
 import logger from '../config/logger';
 import { query } from '../config/database';
+import { serverInstance } from '../utils/serverInstance';
 
 export const login = async (req: Request, res: Response) => {
   try {
@@ -58,6 +59,7 @@ export const login = async (req: Request, res: Response) => {
         username: user.username,
         email: user.email,
         role: user.role || 'user',
+        instanceId: serverInstance.getInstanceId(),
       },
       jwtSecret,
       { expiresIn: '24h' }
@@ -143,6 +145,7 @@ export const register = async (req: Request, res: Response) => {
         username: user.username,
         email: user.email,
         role: user.role,
+        instanceId: serverInstance.getInstanceId(),
       },
       jwtSecret,
       { expiresIn: '24h' }
@@ -350,6 +353,7 @@ export const oktaSSOCallback = async (req: Request, res: Response) => {
         firstName: user.first_name,
         lastName: user.last_name,
         role: user.role || 'user',
+        instanceId: serverInstance.getInstanceId(),
       },
       jwtSecret,
       { expiresIn: '24h' }
