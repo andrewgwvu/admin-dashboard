@@ -9,6 +9,7 @@ export default function AccountsPage() {
   const [results, setResults] = useState<AggregatedSearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [hasSearched, setHasSearched] = useState(false);
   const navigate = useNavigate();
 
   const handleSearch = async (e: React.FormEvent) => {
@@ -17,6 +18,7 @@ export default function AccountsPage() {
 
     setError('');
     setLoading(true);
+    setHasSearched(true);
 
     try {
       const searchResults = await accountService.searchAccounts(query);
@@ -177,7 +179,7 @@ export default function AccountsPage() {
         </div>
       )}
 
-      {!loading && results.length === 0 && query && (
+      {!loading && results.length === 0 && hasSearched && (
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-12 text-center">
           <Search className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
           <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No results found</h3>

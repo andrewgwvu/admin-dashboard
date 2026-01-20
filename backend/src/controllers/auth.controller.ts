@@ -5,6 +5,7 @@ import axios from 'axios';
 import { ApiResponse } from '../types';
 import logger from '../config/logger';
 import { query } from '../config/database';
+import { serverInstance } from '../utils/serverInstance';
 
 export const login = async (req: Request, res: Response) => {
   try {
@@ -58,6 +59,7 @@ export const login = async (req: Request, res: Response) => {
         username: user.username,
         email: user.email,
         role: user.role || 'user',
+        instanceId: serverInstance.getInstanceId(),
       },
       jwtSecret,
       { expiresIn: '24h' }
@@ -143,6 +145,7 @@ export const register = async (req: Request, res: Response) => {
         username: user.username,
         email: user.email,
         role: user.role,
+        instanceId: serverInstance.getInstanceId(),
       },
       jwtSecret,
       { expiresIn: '24h' }
@@ -205,7 +208,7 @@ export const verifyToken = async (req: Request, res: Response) => {
   }
 };
 
-export const oktaSSOLogin = async (req: Request, res: Response) => {
+export const oktaSSOLogin = async (_req: Request, res: Response) => {
   try {
     const oktaDomain = process.env.OKTA_DOMAIN;
     const clientId = process.env.OKTA_CLIENT_ID;
@@ -247,7 +250,7 @@ export const oktaSSOLogin = async (req: Request, res: Response) => {
 
 export const oktaSSOCallback = async (req: Request, res: Response) => {
   try {
-    const { code, state } = req.query;
+    const { code } = req.query;
 
     if (!code) {
       return res.status(400).json({
@@ -285,7 +288,7 @@ export const oktaSSOCallback = async (req: Request, res: Response) => {
       }
     );
 
-    const { access_token, id_token } = tokenResponse.data;
+    const { access_token } = tokenResponse.data;
 
     // Get user info
     const userInfoResponse = await axios.get(
@@ -324,11 +327,12 @@ export const oktaSSOCallback = async (req: Request, res: Response) => {
     } else {
       user = userResult.rows[0];
 
-      // Update last login
-      await query(
-        'UPDATE users SET last_login = NOW() WHERE id = $1',
-        [user.id]
+      // Update existing user with latest Okta profile info and last login
+      const updateResult = await query(
+        'UPDATE users SET first_name = $1, last_name = $2, last_login = NOW() WHERE id = $3 RETURNING id, username, email, first_name, last_name, role',
+        [userInfo.given_name || user.first_name, userInfo.family_name || user.last_name, user.id]
       );
+      user = updateResult.rows[0];
     }
 
     // Generate JWT token
@@ -346,7 +350,10 @@ export const oktaSSOCallback = async (req: Request, res: Response) => {
         id: user.id,
         username: user.username,
         email: user.email,
+        firstName: user.first_name,
+        lastName: user.last_name,
         role: user.role || 'user',
+        instanceId: serverInstance.getInstanceId(),
       },
       jwtSecret,
       { expiresIn: '24h' }

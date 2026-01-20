@@ -25,6 +25,10 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Trust proxy - configured for nginx (1 proxy hop)
+// This is more secure than 'true' as it only trusts the immediate proxy
+app.set('trust proxy', 1);
+
 // Middleware
 app.use(helmet());
 app.use(cors());
@@ -42,6 +46,10 @@ const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // Limit each IP to 100 requests per windowMs
   message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  // Validate proxy configuration
+  validate: { trustProxy: false },
 });
 
 app.use('/api', limiter);

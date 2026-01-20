@@ -2,6 +2,7 @@ import { Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { AuthRequest } from '../types';
 import logger from '../config/logger';
+import { serverInstance } from '../utils/serverInstance';
 
 export const authenticateToken = (
   req: AuthRequest,
@@ -27,7 +28,14 @@ export const authenticateToken = (
       username: string;
       email: string;
       role: 'admin' | 'user';
+      instanceId?: string;
     };
+
+    // Check if token was issued by current server instance
+    if (decoded.instanceId && decoded.instanceId !== serverInstance.getInstanceId()) {
+      logger.info(`Token from previous server instance rejected (token: ${decoded.instanceId.substring(0, 8)}..., current: ${serverInstance.getInstanceId().substring(0, 8)}...)`);
+      return res.status(401).json({ success: false, error: 'Session expired - server restarted' });
+    }
 
     req.user = decoded;
     return next();
