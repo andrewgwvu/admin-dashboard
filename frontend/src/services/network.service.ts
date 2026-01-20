@@ -1,5 +1,5 @@
 import api from './api';
-import { ApiResponse, NetworkDevice, NetworkClient, FirmwareInfo, SwitchPort, APRadio, TrafficStats, NetworkTopology, SystemLog, WLAN } from '../types';
+import { ApiResponse, NetworkDevice, NetworkClient, FirmwareInfo, SwitchPort, APRadio, TrafficStats, NetworkTopology, SystemLog } from '../types';
 
 export const networkService = {
   async getDevices(): Promise<NetworkDevice[]> {

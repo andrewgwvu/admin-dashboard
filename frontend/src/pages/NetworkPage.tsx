@@ -183,21 +183,6 @@ export default function NetworkPage() {
     }
   };
 
-  const handleUpgradeFirmware = async (deviceId: string) => {
-    if (!confirm('Are you sure you want to upgrade the firmware on this device? This may take several minutes and the device will reboot.')) return;
-
-    setActionLoading(`firmware-${deviceId}`);
-    try {
-      await networkService.upgradeFirmware(deviceId);
-      alert('Firmware upgrade initiated');
-      await loadData();
-    } catch (err: any) {
-      alert(err.message || 'Failed to upgrade firmware');
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
   const handleBlockClient = async (clientMac: string) => {
     if (!confirm('Are you sure you want to block this client?')) return;
 
