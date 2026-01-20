@@ -32,9 +32,18 @@ class OmadaService {
   private clientId: string;
   private clientSecret: string;
 
-  // token cache
+  // Web API credentials
+  private webApiUsername: string;
+  private webApiPassword: string;
+
+  // token cache (OpenAPI)
   private accessToken?: string;
   private accessTokenExpiresAt?: number;
+
+  // Web API session cache
+  private controllerId?: string;
+  private webApiToken?: string;
+  private csrfToken?: string;
 
   constructor() {
     this.baseUrl = (process.env.OMADA_URL || '').replace(/\/$/, '');
@@ -43,6 +52,9 @@ class OmadaService {
     this.omadacId = process.env.OMADA_OPENAPI_OMADAC_ID || '';
     this.clientId = process.env.OMADA_OPENAPI_CLIENT_ID || '';
     this.clientSecret = process.env.OMADA_OPENAPI_CLIENT_SECRET || '';
+
+    this.webApiUsername = process.env.OMADA_USERNAME || '';
+    this.webApiPassword = process.env.OMADA_PASSWORD || '';
 
     this.client = axios.create({
       baseURL: this.baseUrl,
@@ -160,6 +172,151 @@ class OmadaService {
     }
 
     return (resp2.data.result ?? ({} as any)) as T;
+  }
+
+  // ========== Web API Methods (for features not in OpenAPI) ==========
+
+  /**
+   * Get controller ID for Web API requests
+   */
+  private async getControllerId(): Promise<string> {
+    if (this.controllerId) {
+      return this.controllerId;
+    }
+
+    const resp = await this.client.get<ApiResponse<any>>('/api/info');
+
+    if (typeof resp.data === 'string') {
+      throw new Error('Omada /api/info returned HTML');
+    }
+
+    if (!resp.data || resp.data.errorCode !== 0) {
+      throw new Error(`Omada /api/info error: ${resp.data?.errorCode ?? 'unknown'} ${resp.data?.msg ?? ''}`);
+    }
+
+    const omadacId = resp.data.result?.omadacId;
+    if (!omadacId) {
+      throw new Error('Omada /api/info response missing result.omadacId');
+    }
+
+    this.controllerId = omadacId;
+    logger.info(`Discovered controller ID: ${omadacId}`);
+    return omadacId;
+  }
+
+  /**
+   * Login to Web API using username/password
+   */
+  private async webApiLogin(): Promise<{ token: string; csrfToken: string }> {
+    if (!this.webApiUsername || !this.webApiPassword) {
+      throw new Error('Web API credentials not configured. Set OMADA_USERNAME and OMADA_PASSWORD.');
+    }
+
+    // Get controller ID first
+    const controllerId = await this.getControllerId();
+
+    const resp = await this.client.post<ApiResponse<any>>(
+      `/${controllerId}/api/v2/login`,
+      {
+        username: this.webApiUsername,
+        password: this.webApiPassword,
+      }
+    );
+
+    if (typeof resp.data === 'string') {
+      throw new Error('Omada Web API login returned HTML');
+    }
+
+    if (!resp.data || resp.data.errorCode !== 0) {
+      throw new Error(`Omada Web API login error: ${resp.data?.errorCode ?? 'unknown'} ${resp.data?.msg ?? ''}`);
+    }
+
+    const token = resp.data.result?.token;
+    if (!token) {
+      throw new Error('Omada Web API login response missing result.token');
+    }
+
+    // Extract CSRF token from response
+    const csrfToken = token;
+
+    this.webApiToken = token;
+    this.csrfToken = csrfToken;
+
+    logger.info('Successfully authenticated with Omada Web API');
+    return { token, csrfToken };
+  }
+
+  /**
+   * Make an authenticated Web API request
+   */
+  private async webApiRequest<T>(
+    method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
+    path: string,
+    params?: Record<string, any>,
+    body?: any
+  ): Promise<T> {
+    // Ensure we have a valid session
+    if (!this.webApiToken || !this.csrfToken) {
+      await this.webApiLogin();
+    }
+
+    const controllerId = await this.getControllerId();
+
+    const headers: Record<string, string> = {
+      'Csrf-Token': this.csrfToken!,
+    };
+
+    try {
+      const resp = await this.client.request<ApiResponse<T>>({
+        method,
+        url: `/${controllerId}${path}`,
+        params: params || {},
+        data: body,
+        headers,
+      });
+
+      if (typeof resp.data === 'string') {
+        throw new Error('Omada Web API returned HTML');
+      }
+
+      if (!resp.data || resp.data.errorCode !== 0) {
+        // If unauthorized, try re-logging in
+        if (resp.data?.errorCode === -1010 || resp.data?.errorCode === -1001) {
+          logger.warn('Web API session expired, re-authenticating...');
+          this.webApiToken = undefined;
+          this.csrfToken = undefined;
+          await this.webApiLogin();
+
+          // Retry the request
+          const retryResp = await this.client.request<ApiResponse<T>>({
+            method,
+            url: `/${controllerId}${path}`,
+            params: params || {},
+            data: body,
+            headers: {
+              'Csrf-Token': this.csrfToken!,
+            },
+          });
+
+          if (!retryResp.data || retryResp.data.errorCode !== 0) {
+            throw new Error(`Omada Web API error: ${retryResp.data?.errorCode ?? 'unknown'} ${retryResp.data?.msg ?? ''}`);
+          }
+
+          return (retryResp.data.result ?? ({} as any)) as T;
+        }
+
+        throw new Error(`Omada Web API error: ${resp.data?.errorCode ?? 'unknown'} ${resp.data?.msg ?? ''}`);
+      }
+
+      return (resp.data.result ?? ({} as any)) as T;
+    } catch (e: any) {
+      // If network error or session issue, clear cache
+      if (e.response?.status === 401 || e.response?.status === 403) {
+        this.webApiToken = undefined;
+        this.csrfToken = undefined;
+      }
+      throw e;
+    }
   }
 
   /**
@@ -375,10 +532,10 @@ class OmadaService {
     try {
       const siteId = await this.resolveSiteId();
 
-      const result: any = await this.openApiRequest<any>(
+      // Use Web API for alerts (not available in OpenAPI v1)
+      const result: any = await this.webApiRequest<any>(
         'GET',
-        `/openapi/v2/sites/${siteId}/alerts`,
-        `/sites/${siteId}/alerts`,
+        `/api/v2/sites/${siteId}/alerts`,
         { page, pageSize }
       );
 
@@ -398,10 +555,10 @@ class OmadaService {
     try {
       const siteId = await this.resolveSiteId();
 
-      const result: any = await this.openApiRequest<any>(
+      // Use Web API for events (not available in OpenAPI v1)
+      const result: any = await this.webApiRequest<any>(
         'GET',
-        `/openapi/v2/sites/${siteId}/events`,
-        `/sites/${siteId}/events`,
+        `/api/v2/sites/${siteId}/events`,
         { page, pageSize }
       );
 
@@ -533,10 +690,10 @@ class OmadaService {
     try {
       const siteId = await this.resolveSiteId();
 
-      const result: any = await this.openApiRequest<any>(
+      // Use Web API for switch ports (not available in OpenAPI v1)
+      const result: any = await this.webApiRequest<any>(
         'GET',
-        `/openapi/v2/sites/${siteId}/switches/${switchId}/ports`,
-        `/sites/${siteId}/switches/${switchId}/ports`
+        `/api/v2/sites/${siteId}/switches/${switchId}/ports`
       );
 
       const rows = Array.isArray(result?.data) ? result.data : Array.isArray(result) ? result : [];
@@ -570,10 +727,10 @@ class OmadaService {
     try {
       const siteId = await this.resolveSiteId();
 
-      await this.openApiRequest<any>(
-        'POST',
-        `/openapi/v2/sites/${siteId}/switches/${switchId}/ports/${portId}`,
-        `/sites/${siteId}/switches/${switchId}/ports/${portId}`,
+      // Use Web API for switch port control (not available in OpenAPI v1)
+      await this.webApiRequest<any>(
+        'PATCH',
+        `/api/v2/sites/${siteId}/switches/${switchId}/ports/${portId}`,
         {},
         config
       );
@@ -738,10 +895,10 @@ class OmadaService {
     try {
       const siteId = await this.resolveSiteId();
 
-      const result: any = await this.openApiRequest<any>(
+      // Use Web API for traffic stats (not available in OpenAPI v1)
+      const result: any = await this.webApiRequest<any>(
         'GET',
-        `/openapi/v2/sites/${siteId}/statistics/traffic`,
-        `/sites/${siteId}/statistics/traffic`,
+        `/api/v2/sites/${siteId}/statistics/traffic`,
         { period: '1h' }
       );
 
@@ -767,10 +924,10 @@ class OmadaService {
     try {
       const siteId = await this.resolveSiteId();
 
-      const result: any = await this.openApiRequest<any>(
+      // Use Web API for client traffic (not available in OpenAPI v1)
+      const result: any = await this.webApiRequest<any>(
         'GET',
-        `/openapi/v2/sites/${siteId}/clients/${clientMac}/traffic`,
-        `/sites/${siteId}/clients/${clientMac}/traffic`
+        `/api/v2/sites/${siteId}/clients/${clientMac}/traffic`
       );
 
       return {
@@ -788,10 +945,10 @@ class OmadaService {
     try {
       const siteId = await this.resolveSiteId();
 
-      const result: any = await this.openApiRequest<any>(
+      // Use Web API for top clients stats (not available in OpenAPI v1)
+      const result: any = await this.webApiRequest<any>(
         'GET',
-        `/openapi/v2/sites/${siteId}/statistics/top-clients`,
-        `/sites/${siteId}/statistics/top-clients`,
+        `/api/v2/sites/${siteId}/statistics/top-clients`,
         { limit }
       );
 
@@ -865,10 +1022,10 @@ class OmadaService {
     try {
       const siteId = await this.resolveSiteId();
 
-      const result: any = await this.openApiRequest<any>(
+      // Use Web API for system logs (not available in OpenAPI v1)
+      const result: any = await this.webApiRequest<any>(
         'GET',
-        `/openapi/v2/sites/${siteId}/logs`,
-        `/sites/${siteId}/logs`,
+        `/api/v2/sites/${siteId}/logs`,
         { page, pageSize }
       );
 
