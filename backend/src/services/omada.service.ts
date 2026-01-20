@@ -816,7 +816,6 @@ class OmadaService {
       const clients = await this.getClients();
 
       // Build device hierarchy
-      const deviceMap = new Map(devices.map(d => [d.mac, d]));
       const connections: any[] = [];
       const deviceNodes = devices.map(d => ({
         id: d.mac,
