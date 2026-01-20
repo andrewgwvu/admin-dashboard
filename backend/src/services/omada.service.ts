@@ -266,11 +266,17 @@ class OmadaService {
       'Csrf-Token': this.csrfToken!,
     };
 
+    // Web API requires token as query parameter
+    const queryParams = {
+      ...(params || {}),
+      token: this.webApiToken!,
+    };
+
     try {
       const resp = await this.client.request<ApiResponse<T>>({
         method,
         url: `/${controllerId}${path}`,
-        params: params || {},
+        params: queryParams,
         data: body,
         headers,
       });
@@ -287,11 +293,16 @@ class OmadaService {
           this.csrfToken = undefined;
           await this.webApiLogin();
 
-          // Retry the request
+          // Retry the request with new token
+          const retryParams = {
+            ...(params || {}),
+            token: this.webApiToken!,
+          };
+
           const retryResp = await this.client.request<ApiResponse<T>>({
             method,
             url: `/${controllerId}${path}`,
-            params: params || {},
+            params: retryParams,
             data: body,
             headers: {
               'Csrf-Token': this.csrfToken!,
