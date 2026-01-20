@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Server, Wifi, Activity, RefreshCw, Power, Ban, Loader2, Cable } from 'lucide-react';
+import { Server, Wifi, Activity, RefreshCw, Power, Ban, Loader2, Cable, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { networkService } from '../services/network.service';
 import { NetworkDevice, NetworkClient } from '../types';
 
 type Tab = 'devices' | 'clients';
+type SortField = 'name' | 'ip' | 'connection' | 'status';
+type SortDirection = 'asc' | 'desc';
 
 export default function NetworkPage() {
   const [activeTab, setActiveTab] = useState<Tab>('devices');
@@ -12,6 +14,8 @@ export default function NetworkPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [sortField, setSortField] = useState<SortField>('name');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
   useEffect(() => {
     loadData();
@@ -34,6 +38,62 @@ export default function NetworkPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      // Toggle direction
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // New field, default to ascending
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortedClients = () => {
+    const sorted = [...clients].sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (sortField) {
+        case 'name':
+          aValue = (a.name || a.hostname || a.mac || '').toLowerCase();
+          bValue = (b.name || b.hostname || b.mac || '').toLowerCase();
+          break;
+        case 'ip':
+          aValue = a.ip || '';
+          bValue = b.ip || '';
+          break;
+        case 'connection':
+          aValue = a.wireless ? 'wireless' : 'wired';
+          bValue = b.wireless ? 'wireless' : 'wired';
+          break;
+        case 'status':
+          aValue = a.connected ? 'connected' : 'disconnected';
+          bValue = b.connected ? 'connected' : 'disconnected';
+          break;
+        default:
+          return 0;
+      }
+
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    return sorted;
+  };
+
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="h-4 w-4 ml-1 inline" />;
+    }
+    return sortDirection === 'asc' ? (
+      <ArrowUp className="h-4 w-4 ml-1 inline" />
+    ) : (
+      <ArrowDown className="h-4 w-4 ml-1 inline" />
+    );
   };
 
   const handleRebootDevice = async (deviceId: string) => {
@@ -234,17 +294,33 @@ export default function NetworkPage() {
                   <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                     <thead className="bg-gray-50 dark:bg-gray-700">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        <th
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                          onClick={() => handleSort('name')}
+                        >
                           Client
+                          <SortIcon field="name" />
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        <th
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                          onClick={() => handleSort('ip')}
+                        >
                           IP Address
+                          <SortIcon field="ip" />
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        <th
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                          onClick={() => handleSort('connection')}
+                        >
                           Connection
+                          <SortIcon field="connection" />
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        <th
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                          onClick={() => handleSort('status')}
+                        >
                           Status
+                          <SortIcon field="status" />
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                           Actions
@@ -252,7 +328,7 @@ export default function NetworkPage() {
                       </tr>
                     </thead>
                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                      {clients.map((client) => (
+                      {getSortedClients().map((client) => (
                         <tr key={client.id}>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
