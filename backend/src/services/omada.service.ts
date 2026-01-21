@@ -263,25 +263,21 @@ class OmadaService {
 
     const controllerId = await this.getControllerId();
 
+    // Web API uses cookie-based sessions - send token as Cookie header
     const headers: Record<string, string> = {
       'Csrf-Token': this.csrfToken!,
-    };
-
-    // Web API requires token as query parameter
-    const queryParams = {
-      ...(params || {}),
-      token: this.webApiToken!,
+      'Cookie': `${controllerId}=${this.webApiToken!}`,
     };
 
     try {
       const fullUrl = `/${controllerId}${path}`;
       const tokenPreview = this.webApiToken?.substring(0, 10);
-      logger.info(`WebAPI ${method} ${fullUrl}?token=${tokenPreview}... (CSRF: ${this.csrfToken?.substring(0, 10)}...)`);
+      logger.info(`WebAPI ${method} ${fullUrl} with Cookie: ${controllerId}=${tokenPreview}... (CSRF: ${this.csrfToken?.substring(0, 10)}...)`);
 
       const resp = await this.client.request<ApiResponse<T> | string>({
         method,
         url: fullUrl,
-        params: queryParams,
+        params: params || {},
         data: body,
         headers,
         validateStatus: (s) => s >= 200 && s < 300, // Only accept 2xx, reject 302 redirects
@@ -301,19 +297,15 @@ class OmadaService {
           this.csrfToken = undefined;
           await this.webApiLogin();
 
-          // Retry the request with new token
-          const retryParams = {
-            ...(params || {}),
-            token: this.webApiToken!,
-          };
-
+          // Retry the request with new token as cookie
           const retryResp = await this.client.request<ApiResponse<T> | string>({
             method,
             url: `/${controllerId}${path}`,
-            params: retryParams,
+            params: params || {},
             data: body,
             headers: {
               'Csrf-Token': this.csrfToken!,
+              'Cookie': `${controllerId}=${this.webApiToken!}`,
             },
             validateStatus: (s) => s >= 200 && s < 300,
           });
