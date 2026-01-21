@@ -273,16 +273,21 @@ class OmadaService {
     };
 
     try {
+      const fullUrl = `/${controllerId}${path}`;
+      logger.debug(`WebAPI ${method} ${fullUrl} with token: ${this.webApiToken?.substring(0, 10)}...`);
+
       const resp = await this.client.request<ApiResponse<T>>({
         method,
-        url: `/${controllerId}${path}`,
+        url: fullUrl,
         params: queryParams,
         data: body,
         headers,
       });
 
       if (typeof resp.data === 'string') {
-        throw new Error('Omada Web API returned HTML');
+        const preview = resp.data.substring(0, 200);
+        logger.error(`Web API returned HTML instead of JSON for ${method} ${fullUrl}: ${preview}...`);
+        throw new Error(`Omada Web API returned HTML (${resp.status}): ${preview.substring(0, 100)}`);
       }
 
       if (!resp.data || resp.data.errorCode !== 0) {
