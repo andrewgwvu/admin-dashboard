@@ -28,7 +28,7 @@ interface WeatherWidgetProps {
 
 export default function WeatherWidget({ latitude, longitude }: WeatherWidgetProps) {
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'current' | 'forecast' | 'hourly' | 'alerts' | 'details'>('current');
   const [locationInput, setLocationInput] = useState({ lat: latitude?.toString() || '', lon: longitude?.toString() || '', zipCode: '' });

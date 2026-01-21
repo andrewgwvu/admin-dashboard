@@ -39,14 +39,34 @@ class HomeAssistantService {
     }
   }
 
-  async testConnection(): Promise<boolean> {
+  async testConnection(): Promise<{ success: boolean; error?: string }> {
     this.ensureConfigured();
     try {
       await this.api!.get('/api/');
-      return true;
+      return { success: true };
     } catch (error) {
       console.error('HomeAssistant connection test failed:', error);
-      return false;
+
+      if (axios.isAxiosError(error)) {
+        if (error.code === 'ERR_NETWORK' || error.message.includes('Network Error')) {
+          return {
+            success: false,
+            error: 'Network error - Could not connect to HomeAssistant. This is likely a CORS issue. See instructions below.'
+          };
+        }
+        if (error.response?.status === 401) {
+          return { success: false, error: 'Invalid access token - Please check your token and try again.' };
+        }
+        if (error.response?.status === 404) {
+          return { success: false, error: 'Invalid URL - HomeAssistant API not found at this address.' };
+        }
+        return {
+          success: false,
+          error: `Connection failed: ${error.message}`
+        };
+      }
+
+      return { success: false, error: 'Unknown connection error' };
     }
   }
 

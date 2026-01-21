@@ -55,11 +55,11 @@ export default function HomeAssistantWidget() {
         accessToken: configInput.accessToken,
       });
 
-      const isConnected = await homeAssistantService.testConnection();
-      setConnectionStatus(isConnected ? 'connected' : 'disconnected');
+      const result = await homeAssistantService.testConnection();
+      setConnectionStatus(result.success ? 'connected' : 'disconnected');
 
-      if (!isConnected) {
-        setError('Connection failed. Please check your URL and access token.');
+      if (!result.success) {
+        setError(result.error || 'Connection failed. Please check your URL and access token.');
       }
     } catch (err) {
       setConnectionStatus('disconnected');
@@ -84,16 +84,16 @@ export default function HomeAssistantWidget() {
         accessToken: configInput.accessToken,
       });
 
-      const isConnected = await homeAssistantService.testConnection();
+      const result = await homeAssistantService.testConnection();
 
-      if (isConnected) {
+      if (result.success) {
         localStorage.setItem('ha_url', configInput.url);
         localStorage.setItem('ha_token', configInput.accessToken);
         setConnectionStatus('connected');
         setShowSettings(false);
         await fetchLights();
       } else {
-        setError('Connection failed. Please check your configuration.');
+        setError(result.error || 'Connection failed. Please check your configuration.');
         setConnectionStatus('disconnected');
       }
     } catch (err) {
@@ -382,11 +382,36 @@ export default function HomeAssistantWidget() {
           </div>
         </div>
 
-        <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-          <p className="text-xs text-blue-800 dark:text-blue-300">
-            <strong>Note:</strong> You'll need to create a long-lived access token in HomeAssistant.
-            Go to Profile → Long-Lived Access Tokens → Create Token.
-          </p>
+        <div className="mt-4 space-y-3">
+          <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+            <p className="text-xs text-blue-800 dark:text-blue-300">
+              <strong>Access Token:</strong> Create a long-lived access token in HomeAssistant.
+              Go to Profile → Long-Lived Access Tokens → Create Token.
+            </p>
+          </div>
+
+          {error && error.includes('CORS') && (
+            <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+              <p className="text-xs font-semibold text-yellow-900 dark:text-yellow-200 mb-2">
+                CORS Configuration Required
+              </p>
+              <p className="text-xs text-yellow-800 dark:text-yellow-300 mb-2">
+                Add this to your HomeAssistant <code className="bg-yellow-100 dark:bg-yellow-900 px-1 rounded">configuration.yaml</code>:
+              </p>
+              <pre className="text-xs bg-yellow-100 dark:bg-yellow-900 p-2 rounded overflow-x-auto text-yellow-900 dark:text-yellow-100">
+{`http:
+  cors_allowed_origins:
+    - ${window.location.origin}
+  use_x_forwarded_for: true
+  trusted_proxies:
+    - 127.0.0.1
+    - ::1`}
+              </pre>
+              <p className="text-xs text-yellow-800 dark:text-yellow-300 mt-2">
+                After adding this, restart HomeAssistant for changes to take effect.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     );
