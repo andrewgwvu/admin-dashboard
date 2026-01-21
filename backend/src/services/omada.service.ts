@@ -285,7 +285,8 @@ class OmadaService {
       });
 
       if (typeof resp.data === 'string') {
-        const preview = resp.data.substring(0, 200);
+        const htmlData = resp.data as string;
+        const preview = htmlData.substring(0, 200);
         logger.error(`Web API returned HTML instead of JSON for ${method} ${fullUrl}: ${preview}...`);
         throw new Error(`Omada Web API returned HTML (${resp.status}): ${preview.substring(0, 100)}`);
       }
