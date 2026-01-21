@@ -42,7 +42,6 @@ class OmadaService {
 
   // Web API session cache
   private controllerId?: string;
-  private webApiToken?: string;
   private csrfToken?: string;
   private sessionCookie?: string; // TPOMADA_SESSIONID cookie value
 
@@ -257,15 +256,12 @@ class OmadaService {
       throw new Error('Omada Web API login response missing TPOMADA_SESSIONID cookie');
     }
 
-    // Extract CSRF token from response
-    const csrfToken = token;
-
-    this.webApiToken = token;
-    this.csrfToken = csrfToken;
+    // Extract CSRF token from response (token is used for CSRF validation)
+    this.csrfToken = token;
     this.sessionCookie = sessionId;
 
     logger.info(`Successfully authenticated with Omada Web API - session: ${sessionId.substring(0, 15)}... token: ${token.substring(0, 15)}...`);
-    return { token, csrfToken };
+    return { token, csrfToken: token };
   }
 
   /**
@@ -315,7 +311,6 @@ class OmadaService {
         if (resp.data?.errorCode === -1010 || resp.data?.errorCode === -1001) {
           logger.warn('Web API session expired, re-authenticating...');
           this.sessionCookie = undefined;
-          this.webApiToken = undefined;
           this.csrfToken = undefined;
           await this.webApiLogin();
 
@@ -352,7 +347,6 @@ class OmadaService {
       if (e.response?.status === 401 || e.response?.status === 403 || e.response?.status === 302) {
         logger.warn(`Web API authentication failed (${e.response?.status}), clearing session cache`);
         this.sessionCookie = undefined;
-        this.webApiToken = undefined;
         this.csrfToken = undefined;
       }
       throw e;
