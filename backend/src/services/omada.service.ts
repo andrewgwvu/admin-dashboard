@@ -276,7 +276,7 @@ class OmadaService {
       const fullUrl = `/${controllerId}${path}`;
       logger.debug(`WebAPI ${method} ${fullUrl} with token: ${this.webApiToken?.substring(0, 10)}...`);
 
-      const resp = await this.client.request<ApiResponse<T>>({
+      const resp = await this.client.request<ApiResponse<T> | string>({
         method,
         url: fullUrl,
         params: queryParams,
@@ -285,8 +285,7 @@ class OmadaService {
       });
 
       if (typeof resp.data === 'string') {
-        const htmlData = resp.data as string;
-        const preview = htmlData.substring(0, 200);
+        const preview = (resp.data as string).substring(0, 200);
         logger.error(`Web API returned HTML instead of JSON for ${method} ${fullUrl}: ${preview}...`);
         throw new Error(`Omada Web API returned HTML (${resp.status}): ${preview.substring(0, 100)}`);
       }
@@ -305,7 +304,7 @@ class OmadaService {
             token: this.webApiToken!,
           };
 
-          const retryResp = await this.client.request<ApiResponse<T>>({
+          const retryResp = await this.client.request<ApiResponse<T> | string>({
             method,
             url: `/${controllerId}${path}`,
             params: retryParams,
@@ -314,6 +313,10 @@ class OmadaService {
               'Csrf-Token': this.csrfToken!,
             },
           });
+
+          if (typeof retryResp.data === 'string') {
+            throw new Error('Omada Web API returned HTML after retry');
+          }
 
           if (!retryResp.data || retryResp.data.errorCode !== 0) {
             throw new Error(`Omada Web API error: ${retryResp.data?.errorCode ?? 'unknown'} ${retryResp.data?.msg ?? ''}`);
