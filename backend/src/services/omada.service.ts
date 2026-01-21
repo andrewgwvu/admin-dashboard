@@ -237,13 +237,17 @@ class OmadaService {
       throw new Error('Omada Web API login response missing result.token');
     }
 
+    // Log full response to debug
+    logger.info(`Login response headers: ${JSON.stringify(resp.headers)}`);
+    logger.info(`Login response data keys: ${JSON.stringify(Object.keys(resp.data.result || {}))}`);
+
     // Extract CSRF token from response
     const csrfToken = token;
 
     this.webApiToken = token;
     this.csrfToken = csrfToken;
 
-    logger.info('Successfully authenticated with Omada Web API');
+    logger.info(`Successfully authenticated with Omada Web API - token: ${token.substring(0, 15)}...`);
     return { token, csrfToken };
   }
 
@@ -263,21 +267,26 @@ class OmadaService {
 
     const controllerId = await this.getControllerId();
 
-    // Web API uses cookie-based sessions - send token as Cookie header
+    // Try BOTH cookie and query parameter for WebAPI authentication
     const headers: Record<string, string> = {
       'Csrf-Token': this.csrfToken!,
       'Cookie': `${controllerId}=${this.webApiToken!}`,
     };
 
+    const queryParams = {
+      ...(params || {}),
+      token: this.webApiToken!,
+    };
+
     try {
       const fullUrl = `/${controllerId}${path}`;
       const tokenPreview = this.webApiToken?.substring(0, 10);
-      logger.info(`WebAPI ${method} ${fullUrl} with Cookie: ${controllerId}=${tokenPreview}... (CSRF: ${this.csrfToken?.substring(0, 10)}...)`);
+      logger.info(`WebAPI ${method} ${fullUrl}?token=${tokenPreview}... Cookie: ${controllerId}=${tokenPreview}... CSRF: ${this.csrfToken?.substring(0, 10)}...`);
 
       const resp = await this.client.request<ApiResponse<T> | string>({
         method,
         url: fullUrl,
-        params: params || {},
+        params: queryParams,
         data: body,
         headers,
         validateStatus: (s) => s >= 200 && s < 300, // Only accept 2xx, reject 302 redirects
@@ -297,11 +306,16 @@ class OmadaService {
           this.csrfToken = undefined;
           await this.webApiLogin();
 
-          // Retry the request with new token as cookie
+          // Retry the request with new token (both cookie and query param)
+          const retryParams = {
+            ...(params || {}),
+            token: this.webApiToken!,
+          };
+
           const retryResp = await this.client.request<ApiResponse<T> | string>({
             method,
             url: `/${controllerId}${path}`,
-            params: params || {},
+            params: retryParams,
             data: body,
             headers: {
               'Csrf-Token': this.csrfToken!,
