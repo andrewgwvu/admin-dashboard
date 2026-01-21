@@ -20,7 +20,36 @@ const weatherApi = axios.create({
   },
 });
 
+interface ZipCodeResult {
+  latitude: number;
+  longitude: number;
+  city: string;
+  state: string;
+}
+
 export const weatherService = {
+  async getCoordinatesFromZipCode(zipCode: string): Promise<ZipCodeResult> {
+    try {
+      // Use Zippopotam.us API for ZIP code lookup
+      const response = await axios.get(`https://api.zippopotam.us/us/${zipCode}`);
+
+      if (response.data && response.data.places && response.data.places.length > 0) {
+        const place = response.data.places[0];
+        return {
+          latitude: parseFloat(place.latitude),
+          longitude: parseFloat(place.longitude),
+          city: place['place name'],
+          state: place['state abbreviation'],
+        };
+      }
+      throw new Error('ZIP code not found');
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
+        throw new Error('Invalid ZIP code');
+      }
+      throw new Error('Failed to lookup ZIP code');
+    }
+  },
   async getPoint(latitude: number, longitude: number): Promise<Point> {
     const response = await weatherApi.get<Point>(`/points/${latitude.toFixed(4)},${longitude.toFixed(4)}`);
     return response.data;

@@ -31,8 +31,10 @@ export default function WeatherWidget({ latitude, longitude }: WeatherWidgetProp
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'current' | 'forecast' | 'hourly' | 'alerts' | 'details'>('current');
-  const [locationInput, setLocationInput] = useState({ lat: latitude?.toString() || '', lon: longitude?.toString() || '' });
+  const [locationInput, setLocationInput] = useState({ lat: latitude?.toString() || '', lon: longitude?.toString() || '', zipCode: '' });
+  const [inputMode, setInputMode] = useState<'zipcode' | 'coords'>('zipcode');
   const [showSettings, setShowSettings] = useState(!latitude || !longitude);
+  const [locationName, setLocationName] = useState<string>('');
 
   useEffect(() => {
     if (latitude && longitude) {
@@ -40,12 +42,15 @@ export default function WeatherWidget({ latitude, longitude }: WeatherWidgetProp
     }
   }, [latitude, longitude]);
 
-  const fetchWeatherData = async (lat: number, lon: number) => {
+  const fetchWeatherData = async (lat: number, lon: number, cityState?: string) => {
     setLoading(true);
     setError(null);
     try {
       const data = await weatherService.getComprehensiveWeatherData(lat, lon);
       setWeatherData(data);
+      if (cityState) {
+        setLocationName(cityState);
+      }
       setShowSettings(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch weather data');
@@ -55,12 +60,34 @@ export default function WeatherWidget({ latitude, longitude }: WeatherWidgetProp
     }
   };
 
-  const handleLocationSubmit = (e: React.FormEvent) => {
+  const handleLocationSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const lat = parseFloat(locationInput.lat);
-    const lon = parseFloat(locationInput.lon);
-    if (!isNaN(lat) && !isNaN(lon)) {
-      fetchWeatherData(lat, lon);
+    setError(null);
+    setLoading(true);
+
+    try {
+      if (inputMode === 'zipcode') {
+        if (!locationInput.zipCode || locationInput.zipCode.length !== 5) {
+          setError('Please enter a valid 5-digit ZIP code');
+          setLoading(false);
+          return;
+        }
+
+        const result = await weatherService.getCoordinatesFromZipCode(locationInput.zipCode);
+        await fetchWeatherData(result.latitude, result.longitude, `${result.city}, ${result.state}`);
+      } else {
+        const lat = parseFloat(locationInput.lat);
+        const lon = parseFloat(locationInput.lon);
+        if (isNaN(lat) || isNaN(lon)) {
+          setError('Please enter valid coordinates');
+          setLoading(false);
+          return;
+        }
+        await fetchWeatherData(lat, lon);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch weather data');
+      setLoading(false);
     }
   };
 
@@ -105,44 +132,113 @@ export default function WeatherWidget({ latitude, longitude }: WeatherWidgetProp
             </button>
           )}
         </div>
+
+        {/* Input Mode Toggle */}
+        <div className="mb-4 flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setInputMode('zipcode')}
+            className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
+              inputMode === 'zipcode'
+                ? 'bg-blue-600 text-white'
+                : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+            }`}
+          >
+            ZIP Code
+          </button>
+          <button
+            type="button"
+            onClick={() => setInputMode('coords')}
+            className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
+              inputMode === 'coords'
+                ? 'bg-blue-600 text-white'
+                : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+            }`}
+          >
+            Coordinates
+          </button>
+        </div>
+
         <form onSubmit={handleLocationSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Latitude
-            </label>
-            <input
-              type="number"
-              step="any"
-              value={locationInput.lat}
-              onChange={(e) => setLocationInput({ ...locationInput, lat: e.target.value })}
-              placeholder="e.g., 39.7456"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Longitude
-            </label>
-            <input
-              type="number"
-              step="any"
-              value={locationInput.lon}
-              onChange={(e) => setLocationInput({ ...locationInput, lon: e.target.value })}
-              placeholder="e.g., -104.9916"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              required
-            />
-          </div>
+          {inputMode === 'zipcode' ? (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                ZIP Code
+              </label>
+              <input
+                type="text"
+                maxLength={5}
+                pattern="[0-9]{5}"
+                value={locationInput.zipCode}
+                onChange={(e) => setLocationInput({ ...locationInput, zipCode: e.target.value })}
+                placeholder="e.g., 10001"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                required
+              />
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Enter a 5-digit US ZIP code
+              </p>
+            </div>
+          ) : (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Latitude
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  value={locationInput.lat}
+                  onChange={(e) => setLocationInput({ ...locationInput, lat: e.target.value })}
+                  placeholder="e.g., 39.7456"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Longitude
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  value={locationInput.lon}
+                  onChange={(e) => setLocationInput({ ...locationInput, lon: e.target.value })}
+                  placeholder="e.g., -104.9916"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  required
+                />
+              </div>
+            </>
+          )}
+
+          {error && (
+            <div className="flex items-center p-3 bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 rounded-lg">
+              <AlertTriangle className="h-4 w-4 mr-2 flex-shrink-0" />
+              <span className="text-sm">{error}</span>
+            </div>
+          )}
+
           <button
             type="submit"
-            className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
+            disabled={loading}
+            className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
           >
-            Get Weather
+            {loading ? (
+              <>
+                <svg className="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Loading...
+              </>
+            ) : (
+              'Get Weather'
+            )}
           </button>
         </form>
         <p className="mt-4 text-xs text-gray-500 dark:text-gray-400">
-          Enter your coordinates to fetch weather data from NOAA/NWS
+          Weather data provided by NOAA/NWS
         </p>
       </div>
     );
@@ -198,9 +294,9 @@ export default function WeatherWidget({ latitude, longitude }: WeatherWidgetProp
               <Cloud className="h-5 w-5 mr-2" />
               Weather Dashboard
             </h2>
-            {weatherData.point && (
+            {(locationName || weatherData.point) && (
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                {weatherData.point.properties.relativeLocation.properties.city}, {weatherData.point.properties.relativeLocation.properties.state}
+                {locationName || `${weatherData.point?.properties.relativeLocation.properties.city}, ${weatherData.point?.properties.relativeLocation.properties.state}`}
               </p>
             )}
           </div>
