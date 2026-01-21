@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test NOAA API</title>
+</head>
+<body>
+    <h1>Testing NOAA Weather API</h1>
+    <button onclick="testAPI()">Test API Call</button>
+    <pre id="output"></pre>
+    
+    <script>
+        async function testAPI() {
+            const output = document.getElementById('output');
+            output.textContent = 'Testing...';
+            
+            try {
+                // Test with a known location (Denver, CO)
+                const response = await fetch('https://api.weather.gov/points/39.7456,-104.9916', {
+                    headers: {
+                        'Accept': 'application/geo+json'
+                    }
+                });
+                
+                output.textContent = `Status: ${response.status}\n`;
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    output.textContent += 'SUCCESS!\n' + JSON.stringify(data, null, 2);
+                } else {
+                    output.textContent += 'FAILED!\n' + await response.text();
+                }
+            } catch (error) {
+                output.textContent = 'ERROR: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>

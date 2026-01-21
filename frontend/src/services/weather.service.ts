@@ -15,9 +15,10 @@ const NOAA_API_BASE = 'https://api.weather.gov';
 const weatherApi = axios.create({
   baseURL: NOAA_API_BASE,
   headers: {
-    'User-Agent': 'AdminDashboard/1.0 (homelab monitoring application)',
+    // Note: User-Agent cannot be set in browser, it's a forbidden header
     Accept: 'application/geo+json',
   },
+  timeout: 30000, // 30 second timeout
 });
 
 interface ZipCodeResult {
@@ -51,8 +52,24 @@ export const weatherService = {
     }
   },
   async getPoint(latitude: number, longitude: number): Promise<Point> {
-    const response = await weatherApi.get<Point>(`/points/${latitude.toFixed(4)},${longitude.toFixed(4)}`);
-    return response.data;
+    try {
+      const response = await weatherApi.get<Point>(`/points/${latitude.toFixed(4)},${longitude.toFixed(4)}`);
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 404) {
+          throw new Error('Location not found. The coordinates may be outside the US or in an unsupported area.');
+        }
+        if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+          throw new Error('Request timeout. The weather service is taking too long to respond.');
+        }
+        if (error.message.includes('Network Error')) {
+          throw new Error('Network error. Please check your internet connection.');
+        }
+        throw new Error(`Weather API error: ${error.response?.statusText || error.message}`);
+      }
+      throw error;
+    }
   },
 
   async getForecast(forecastUrl: string): Promise<Forecast> {
@@ -96,8 +113,11 @@ export const weatherService = {
   },
 
   async getComprehensiveWeatherData(latitude: number, longitude: number): Promise<WeatherData> {
+    console.log(`Fetching weather data for coordinates: ${latitude}, ${longitude}`);
+
     try {
       const point = await this.getPoint(latitude, longitude);
+      console.log('Point data received:', point.properties.relativeLocation.properties);
 
       const [
         forecast,
@@ -113,13 +133,22 @@ export const weatherService = {
         this.getObservationStations(point.properties.observationStations),
       ]);
 
+      console.log('Weather data fetch results:', {
+        forecast: forecast.status,
+        forecastHourly: forecastHourly.status,
+        forecastGridData: forecastGridData.status,
+        alerts: alerts.status,
+        observationStations: observationStations.status,
+      });
+
       let latestObservation: Observation | null = null;
       if (observationStations.status === 'fulfilled' && observationStations.value.features.length > 0) {
         const nearestStationId = observationStations.value.features[0].properties.stationIdentifier;
         try {
           latestObservation = await this.getLatestObservation(nearestStationId);
+          console.log('Latest observation received');
         } catch (error) {
-          console.error('Failed to fetch latest observation:', error);
+          console.warn('Failed to fetch latest observation:', error);
         }
       }
 
@@ -127,12 +156,13 @@ export const weatherService = {
       if (point.properties.radarStation) {
         try {
           radarStation = await this.getRadarStation(point.properties.radarStation);
+          console.log('Radar station received');
         } catch (error) {
-          console.error('Failed to fetch radar station:', error);
+          console.warn('Failed to fetch radar station:', error);
         }
       }
 
-      return {
+      const weatherData = {
         point,
         forecast: forecast.status === 'fulfilled' ? forecast.value : null,
         forecastHourly: forecastHourly.status === 'fulfilled' ? forecastHourly.value : null,
@@ -142,9 +172,15 @@ export const weatherService = {
         latestObservation,
         radarStation,
       };
+
+      console.log('Weather data compilation complete');
+      return weatherData;
     } catch (error) {
       console.error('Error fetching weather data:', error);
-      throw error;
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('Failed to fetch weather data. Please try again.');
     }
   },
 

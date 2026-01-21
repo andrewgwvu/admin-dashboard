@@ -43,25 +43,34 @@ export default function WeatherWidget({ latitude, longitude }: WeatherWidgetProp
   }, [latitude, longitude]);
 
   const fetchWeatherData = async (lat: number, lon: number, cityState?: string) => {
+    console.log('fetchWeatherData called with:', { lat, lon, cityState });
     setLoading(true);
     setError(null);
     try {
       const data = await weatherService.getComprehensiveWeatherData(lat, lon);
+      console.log('Weather data received:', data);
       setWeatherData(data);
       if (cityState) {
         setLocationName(cityState);
       }
       setShowSettings(false);
+      console.log('Weather data set successfully, hiding settings');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch weather data');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch weather data';
       console.error('Weather fetch error:', err);
+      console.error('Error message to display:', errorMessage);
+      setError(errorMessage);
     } finally {
       setLoading(false);
+      console.log('Loading complete');
     }
   };
 
   const handleLocationSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('handleLocationSubmit called');
+    console.log('Input mode:', inputMode);
+    console.log('Location input:', locationInput);
     setError(null);
     setLoading(true);
 
@@ -73,7 +82,9 @@ export default function WeatherWidget({ latitude, longitude }: WeatherWidgetProp
           return;
         }
 
+        console.log('Fetching coordinates for ZIP code:', locationInput.zipCode);
         const result = await weatherService.getCoordinatesFromZipCode(locationInput.zipCode);
+        console.log('Coordinates received:', result);
         await fetchWeatherData(result.latitude, result.longitude, `${result.city}, ${result.state}`);
       } else {
         const lat = parseFloat(locationInput.lat);
@@ -83,10 +94,14 @@ export default function WeatherWidget({ latitude, longitude }: WeatherWidgetProp
           setLoading(false);
           return;
         }
+        console.log('Using coordinates:', { lat, lon });
         await fetchWeatherData(lat, lon);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch weather data');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch weather data';
+      console.error('handleLocationSubmit error:', err);
+      console.error('Error message to display:', errorMessage);
+      setError(errorMessage);
       setLoading(false);
     }
   };
