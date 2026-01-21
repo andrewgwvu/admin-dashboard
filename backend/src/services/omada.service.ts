@@ -66,6 +66,7 @@ class OmadaService {
       },
       maxRedirects: 0,
       validateStatus: (s) => s >= 200 && s < 400,
+      withCredentials: true, // Enable cookie support for WebAPI sessions
     });
 
     if (!this.baseUrl) logger.warn('OMADA_URL is not set');
@@ -274,7 +275,8 @@ class OmadaService {
 
     try {
       const fullUrl = `/${controllerId}${path}`;
-      logger.debug(`WebAPI ${method} ${fullUrl} with token: ${this.webApiToken?.substring(0, 10)}...`);
+      const tokenPreview = this.webApiToken?.substring(0, 10);
+      logger.info(`WebAPI ${method} ${fullUrl}?token=${tokenPreview}... (CSRF: ${this.csrfToken?.substring(0, 10)}...)`);
 
       const resp = await this.client.request<ApiResponse<T> | string>({
         method,
@@ -282,6 +284,7 @@ class OmadaService {
         params: queryParams,
         data: body,
         headers,
+        validateStatus: (s) => s >= 200 && s < 300, // Only accept 2xx, reject 302 redirects
       });
 
       if (typeof resp.data === 'string') {
@@ -312,6 +315,7 @@ class OmadaService {
             headers: {
               'Csrf-Token': this.csrfToken!,
             },
+            validateStatus: (s) => s >= 200 && s < 300,
           });
 
           if (typeof retryResp.data === 'string') {
@@ -331,7 +335,8 @@ class OmadaService {
       return (resp.data.result ?? ({} as any)) as T;
     } catch (e: any) {
       // If network error or session issue, clear cache
-      if (e.response?.status === 401 || e.response?.status === 403) {
+      if (e.response?.status === 401 || e.response?.status === 403 || e.response?.status === 302) {
+        logger.warn(`Web API authentication failed (${e.response?.status}), clearing session cache`);
         this.webApiToken = undefined;
         this.csrfToken = undefined;
       }
