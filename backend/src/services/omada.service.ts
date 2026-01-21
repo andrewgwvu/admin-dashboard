@@ -44,6 +44,7 @@ class OmadaService {
   private controllerId?: string;
   private webApiToken?: string;
   private csrfToken?: string;
+  private sessionCookie?: string; // TPOMADA_SESSIONID cookie value
 
   constructor() {
     this.baseUrl = (process.env.OMADA_URL || '').replace(/\/$/, '');
@@ -237,17 +238,33 @@ class OmadaService {
       throw new Error('Omada Web API login response missing result.token');
     }
 
-    // Log full response to debug
-    logger.info(`Login response headers: ${JSON.stringify(resp.headers)}`);
-    logger.info(`Login response data keys: ${JSON.stringify(Object.keys(resp.data.result || {}))}`);
+    // Extract session cookie from Set-Cookie header
+    const setCookieHeaders = resp.headers['set-cookie'];
+    let sessionId: string | undefined;
+
+    if (setCookieHeaders && Array.isArray(setCookieHeaders)) {
+      for (const cookie of setCookieHeaders) {
+        const match = cookie.match(/TPOMADA_SESSIONID=([^;]+)/);
+        if (match) {
+          sessionId = match[1];
+          break;
+        }
+      }
+    }
+
+    if (!sessionId) {
+      logger.error(`Login response set-cookie: ${JSON.stringify(setCookieHeaders)}`);
+      throw new Error('Omada Web API login response missing TPOMADA_SESSIONID cookie');
+    }
 
     // Extract CSRF token from response
     const csrfToken = token;
 
     this.webApiToken = token;
     this.csrfToken = csrfToken;
+    this.sessionCookie = sessionId;
 
-    logger.info(`Successfully authenticated with Omada Web API - token: ${token.substring(0, 15)}...`);
+    logger.info(`Successfully authenticated with Omada Web API - session: ${sessionId.substring(0, 15)}... token: ${token.substring(0, 15)}...`);
     return { token, csrfToken };
   }
 
@@ -261,32 +278,27 @@ class OmadaService {
     body?: any
   ): Promise<T> {
     // Ensure we have a valid session
-    if (!this.webApiToken || !this.csrfToken) {
+    if (!this.sessionCookie || !this.csrfToken) {
       await this.webApiLogin();
     }
 
     const controllerId = await this.getControllerId();
 
-    // Try BOTH cookie and query parameter for WebAPI authentication
+    // WebAPI uses TPOMADA_SESSIONID cookie for authentication
     const headers: Record<string, string> = {
       'Csrf-Token': this.csrfToken!,
-      'Cookie': `${controllerId}=${this.webApiToken!}`,
-    };
-
-    const queryParams = {
-      ...(params || {}),
-      token: this.webApiToken!,
+      'Cookie': `TPOMADA_SESSIONID=${this.sessionCookie!}`,
     };
 
     try {
       const fullUrl = `/${controllerId}${path}`;
-      const tokenPreview = this.webApiToken?.substring(0, 10);
-      logger.info(`WebAPI ${method} ${fullUrl}?token=${tokenPreview}... Cookie: ${controllerId}=${tokenPreview}... CSRF: ${this.csrfToken?.substring(0, 10)}...`);
+      const sessionPreview = this.sessionCookie?.substring(0, 15);
+      logger.info(`WebAPI ${method} ${fullUrl} with session cookie: ${sessionPreview}... CSRF: ${this.csrfToken?.substring(0, 10)}...`);
 
       const resp = await this.client.request<ApiResponse<T> | string>({
         method,
         url: fullUrl,
-        params: queryParams,
+        params: params || {},
         data: body,
         headers,
         validateStatus: (s) => s >= 200 && s < 300, // Only accept 2xx, reject 302 redirects
@@ -302,24 +314,20 @@ class OmadaService {
         // If unauthorized, try re-logging in
         if (resp.data?.errorCode === -1010 || resp.data?.errorCode === -1001) {
           logger.warn('Web API session expired, re-authenticating...');
+          this.sessionCookie = undefined;
           this.webApiToken = undefined;
           this.csrfToken = undefined;
           await this.webApiLogin();
 
-          // Retry the request with new token (both cookie and query param)
-          const retryParams = {
-            ...(params || {}),
-            token: this.webApiToken!,
-          };
-
+          // Retry the request with new session cookie
           const retryResp = await this.client.request<ApiResponse<T> | string>({
             method,
             url: `/${controllerId}${path}`,
-            params: retryParams,
+            params: params || {},
             data: body,
             headers: {
               'Csrf-Token': this.csrfToken!,
-              'Cookie': `${controllerId}=${this.webApiToken!}`,
+              'Cookie': `TPOMADA_SESSIONID=${this.sessionCookie!}`,
             },
             validateStatus: (s) => s >= 200 && s < 300,
           });
@@ -343,6 +351,7 @@ class OmadaService {
       // If network error or session issue, clear cache
       if (e.response?.status === 401 || e.response?.status === 403 || e.response?.status === 302) {
         logger.warn(`Web API authentication failed (${e.response?.status}), clearing session cache`);
+        this.sessionCookie = undefined;
         this.webApiToken = undefined;
         this.csrfToken = undefined;
       }
