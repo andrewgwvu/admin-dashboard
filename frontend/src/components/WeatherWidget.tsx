@@ -33,12 +33,46 @@ export default function WeatherWidget({ latitude, longitude }: WeatherWidgetProp
   const [activeTab, setActiveTab] = useState<'current' | 'forecast' | 'hourly' | 'alerts' | 'details'>('current');
   const [locationInput, setLocationInput] = useState({ lat: latitude?.toString() || '', lon: longitude?.toString() || '', zipCode: '' });
   const [inputMode, setInputMode] = useState<'zipcode' | 'coords'>('zipcode');
-  const [showSettings, setShowSettings] = useState(!latitude || !longitude);
+  const [showSettings, setShowSettings] = useState(true);
   const [locationName, setLocationName] = useState<string>('');
 
   useEffect(() => {
-    if (latitude && longitude) {
+    // Check for saved location data in localStorage
+    const savedZipCode = localStorage.getItem('weather_zipcode');
+    const savedLat = localStorage.getItem('weather_lat');
+    const savedLon = localStorage.getItem('weather_lon');
+    const savedLocationName = localStorage.getItem('weather_location_name');
+
+    if (savedZipCode) {
+      // Restore ZIP code and fetch weather
+      setLocationInput(prev => ({ ...prev, zipCode: savedZipCode }));
+      setInputMode('zipcode');
+      if (savedLocationName) {
+        setLocationName(savedLocationName);
+      }
+      // Fetch coordinates and weather
+      weatherService.getCoordinatesFromZipCode(savedZipCode)
+        .then(result => fetchWeatherData(result.latitude, result.longitude, savedLocationName || `${result.city}, ${result.state}`))
+        .catch(err => {
+          console.error('Failed to restore weather from saved ZIP:', err);
+          setShowSettings(true);
+        });
+    } else if (savedLat && savedLon) {
+      // Restore coordinates and fetch weather
+      const lat = parseFloat(savedLat);
+      const lon = parseFloat(savedLon);
+      setLocationInput(prev => ({ ...prev, lat: savedLat, lon: savedLon }));
+      setInputMode('coords');
+      if (savedLocationName) {
+        setLocationName(savedLocationName);
+      }
+      fetchWeatherData(lat, lon, savedLocationName || undefined);
+    } else if (latitude && longitude) {
+      // Use props if provided
       fetchWeatherData(latitude, longitude);
+    } else {
+      // No saved data, show settings
+      setShowSettings(true);
     }
   }, [latitude, longitude]);
 
@@ -85,6 +119,13 @@ export default function WeatherWidget({ latitude, longitude }: WeatherWidgetProp
         console.log('Fetching coordinates for ZIP code:', locationInput.zipCode);
         const result = await weatherService.getCoordinatesFromZipCode(locationInput.zipCode);
         console.log('Coordinates received:', result);
+
+        // Save ZIP code to localStorage
+        localStorage.setItem('weather_zipcode', locationInput.zipCode);
+        localStorage.setItem('weather_location_name', `${result.city}, ${result.state}`);
+        localStorage.removeItem('weather_lat');
+        localStorage.removeItem('weather_lon');
+
         await fetchWeatherData(result.latitude, result.longitude, `${result.city}, ${result.state}`);
       } else {
         const lat = parseFloat(locationInput.lat);
@@ -95,6 +136,13 @@ export default function WeatherWidget({ latitude, longitude }: WeatherWidgetProp
           return;
         }
         console.log('Using coordinates:', { lat, lon });
+
+        // Save coordinates to localStorage
+        localStorage.setItem('weather_lat', lat.toString());
+        localStorage.setItem('weather_lon', lon.toString());
+        localStorage.removeItem('weather_zipcode');
+        localStorage.removeItem('weather_location_name');
+
         await fetchWeatherData(lat, lon);
       }
     } catch (err) {
