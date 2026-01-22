@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Users, Network, Server, Activity } from 'lucide-react';
-import WeatherWidget from '../components/WeatherWidget';
+import WeatherSummaryWidget from '../components/WeatherSummaryWidget';
+import RSSWidget from '../components/RSSWidget';
 
 export default function DashboardPage() {
   return (
@@ -105,9 +106,10 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Weather Widget */}
-      <div className="mt-8 animate-fade-in" style={{ animationDelay: '0.4s' }}>
-        <WeatherWidget />
+      {/* Dashboard Widgets */}
+      <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in" style={{ animationDelay: '0.4s' }}>
+        <WeatherSummaryWidget />
+        <RSSWidget />
       </div>
 
       <div className="mt-8 bg-white dark:bg-gray-800 shadow rounded-lg p-6 animate-fade-in" style={{ animationDelay: '0.5s' }}>

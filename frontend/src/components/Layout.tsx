@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Users, Network, Home, LogOut, Shield, Settings, FileText, Moon, Sun, Menu, X } from 'lucide-react';
+import { Users, Network, Home, LogOut, Shield, Settings, FileText, Moon, Sun, Menu, X, Cloud, Sliders } from 'lucide-react';
 import { authService } from '../services/auth.service';
 import { useDarkMode } from '../contexts/DarkModeContext';
 import { useState } from 'react';
@@ -15,6 +15,8 @@ export default function Layout() {
     { name: 'Dashboard', href: '/', icon: Home },
     { name: 'Accounts', href: '/accounts', icon: Users },
     { name: 'Network', href: '/network', icon: Network },
+    { name: 'Weather', href: '/weather', icon: Cloud },
+    { name: 'Settings', href: '/dashboard-settings', icon: Sliders },
   ];
 
   const adminNavigation = [
@@ -32,7 +34,15 @@ export default function Layout() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Mobile header with hamburger */}
       <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 z-40 flex items-center justify-between px-4">
-        <h1 className="text-lg font-bold text-gray-900 dark:text-white">Homelab Dashboard</h1>
+        {localStorage.getItem('dashboard_logo') ? (
+          <img
+            src={localStorage.getItem('dashboard_logo') || ''}
+            alt="Dashboard Logo"
+            className="h-10 w-auto"
+          />
+        ) : (
+          <h1 className="text-lg font-bold text-gray-900 dark:text-white">Homelab Dashboard</h1>
+        )}
         <div className="flex items-center gap-2">
           <button
             onClick={toggleDarkMode}
@@ -66,7 +76,15 @@ export default function Layout() {
         <div className="flex flex-col h-full">
           {/* Logo - Desktop only */}
           <div className="hidden lg:flex items-center justify-between h-16 px-6 border-b border-gray-200 dark:border-gray-700">
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">Homelab Dashboard</h1>
+            {localStorage.getItem('dashboard_logo') ? (
+              <img
+                src={localStorage.getItem('dashboard_logo') || ''}
+                alt="Dashboard Logo"
+                className="h-12 w-auto"
+              />
+            ) : (
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">Homelab Dashboard</h1>
+            )}
             <button
               onClick={toggleDarkMode}
               className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"

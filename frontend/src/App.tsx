@@ -8,6 +8,8 @@ import DashboardPage from './pages/DashboardPage';
 import AccountsPage from './pages/AccountsPage';
 import AccountDetailPage from './pages/AccountDetailPage';
 import NetworkPage from './pages/NetworkPage';
+import WeatherPage from './pages/WeatherPage';
+import DashboardSettingsPage from './pages/DashboardSettingsPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import AdminUsersPage from './pages/AdminUsersPage';
 import AdminConfigPage from './pages/AdminConfigPage';
@@ -63,6 +65,8 @@ function App() {
             <Route path="accounts" element={<AccountsPage />} />
             <Route path="accounts/:identifier" element={<AccountDetailPage />} />
             <Route path="network" element={<NetworkPage />} />
+            <Route path="weather" element={<WeatherPage />} />
+            <Route path="dashboard-settings" element={<DashboardSettingsPage />} />
             <Route
               path="admin"
               element={
