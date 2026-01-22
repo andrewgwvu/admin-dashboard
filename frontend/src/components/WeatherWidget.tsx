@@ -130,7 +130,7 @@ export default function WeatherWidget({ latitude, longitude }: WeatherWidgetProp
     }
   };
 
-  if (showSettings || (!latitude && !longitude)) {
+  if (showSettings && !weatherData) {
     return (
       <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
         <div className="flex items-center justify-between mb-4">
