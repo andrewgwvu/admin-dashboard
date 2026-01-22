@@ -1,11 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Save, X, Plus, Trash2 } from 'lucide-react';
-
-interface RSSFeed {
-  id: string;
-  name: string;
-  url: string;
-}
+import type { RSSFeed } from '../types/rss';
 
 export default function DashboardSettingsPage() {
   const [logo, setLogo] = useState<string>(localStorage.getItem('dashboard_logo') || '');
